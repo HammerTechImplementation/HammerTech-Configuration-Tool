@@ -1,0 +1,20 @@
+{
+  "name": "hammertech-configuration-tool",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CLI tooling for configuring HammerTech tenants from spreadsheets.",
+  "bin": {
+    "htconfig": "./src/cli.js"
+  },
+  "scripts": {
+    "lint": "node scripts/check-syntax.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}
