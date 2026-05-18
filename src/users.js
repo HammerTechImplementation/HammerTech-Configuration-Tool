@@ -105,6 +105,26 @@ const BOOLEAN_FIELDS = new Set([
 
 const FIELD_ALIASES = buildAliases();
 const VALID_ACTIONS = new Set(["create", "update", "patch", "delete", "get", "upsert"]);
+const SIMPLE_USER_SETTING_FIELDS = new Set([
+  "roleNames",
+  "userProjectIds",
+  "isRegionAdmin",
+  "regionAdminRegionIds",
+  "selectedProjectIds",
+  "selectedProjectRegionIds",
+  "currentRegionAdmin",
+  "currentProjectAdmin",
+  "currentIndividualDailyReport",
+  "currentDailyReportAdmin",
+  "currentSiteNotifications",
+  "currentConfidentialData",
+  "selectedRegionIds",
+  "futureAddProjects",
+  "futureIndividualDailyReport",
+  "futureDailyReportAdmin",
+  "futureSiteNotifications",
+  "futureConfidentialData"
+]);
 
 export function rowToUserOperation(row, { defaultAction = "create", forceAction, rowNumber = 0 } = {}) {
   const warnings = [];
@@ -182,6 +202,159 @@ export function planUserOperations(rows, options = {}) {
     operations,
     hasErrors: operations.some((operation) => operation.errors.length > 0)
   };
+}
+
+export function planSimpleUserCreateOperations(rows) {
+  const operations = rows.map((row, index) => {
+    const warnings = [];
+    const normalized = {};
+
+    for (const [header, rawValue] of Object.entries(row || {})) {
+      const value = normalizeCell(rawValue);
+      if (value === "") continue;
+      const field = resolveSimpleUserHeader(header);
+      if (!field) {
+        warnings.push(`Unmapped column "${header}" was ignored.`);
+        continue;
+      }
+      normalized[field] = value;
+    }
+
+    const payload = {};
+    for (const field of ["email", "name", "title", "mobile", "internalIdentifier"]) {
+      if (normalized[field] !== undefined) payload[field] = String(normalized[field]);
+    }
+
+    return {
+      clientId: `user-${index + 1}`,
+      rowNumber: index + 2,
+      action: "create",
+      email: payload.email || "",
+      payload,
+      warnings,
+      errors: validateSimpleUserBasePayload(payload)
+    };
+  });
+
+  return {
+    operations,
+    hasErrors: operations.some((operation) => operation.errors.length > 0)
+  };
+}
+
+export async function executeSimpleUserCreateOperations(client, operations, {
+  apply = false,
+  globalSettings = {},
+  userSettings = {},
+  continueOnError = false
+} = {}) {
+  const results = [];
+
+  for (const operation of operations || []) {
+    const payloadResult = buildSimpleUserCreatePayload(operation, {
+      ...(globalSettings || {}),
+      ...(userSettings?.[operation.clientId] || {})
+    });
+    const errors = uniqueMessages([...(operation.errors || []), ...payloadResult.errors]);
+    const operationWithPayload = { ...operation, payload: payloadResult.payload, errors };
+
+    if (errors.length) {
+      results.push({ operation: operationWithPayload, status: "invalid", errors });
+      if (!continueOnError) break;
+      continue;
+    }
+
+    if (!apply) {
+      results.push({ operation: operationWithPayload, status: "planned" });
+      continue;
+    }
+
+    try {
+      const response = await client.createUser(payloadResult.payload);
+      results.push({ operation: operationWithPayload, status: "success", response });
+    } catch (error) {
+      results.push({
+        operation: operationWithPayload,
+        status: "failed",
+        error: error.message,
+        responseBody: error.responseBody
+      });
+      if (!continueOnError) break;
+    }
+  }
+
+  return results;
+}
+
+function buildSimpleUserCreatePayload(operation, settings = {}) {
+  const payload = { ...(operation?.payload || {}) };
+  const errors = [];
+  const expandedSettings = expandSimpleUserSettings(settings);
+
+  for (const [field, value] of Object.entries(expandedSettings)) {
+    if (!USER_CREATE_FIELDS.includes(field)) continue;
+    try {
+      payload[field] = coerceField(field, value);
+    } catch (error) {
+      errors.push(`${field}: ${error.message}`);
+    }
+  }
+
+  if (payload.isRegionAdmin) {
+    const roles = new Set(payload.roleNames || []);
+    roles.add("regionadmin");
+    payload.roleNames = Array.from(roles);
+  }
+
+  errors.push(...validateSimpleUserBasePayload(payload));
+  if (isEmptyValue(payload.roleNames)) errors.push("Choose at least one role.");
+
+  return {
+    payload,
+    errors: uniqueMessages(errors)
+  };
+}
+
+function expandSimpleUserSettings(settings = {}) {
+  const out = {};
+
+  for (const field of ["roleNames", "userProjectIds", "isRegionAdmin", "regionAdminRegionIds"]) {
+    if (settings[field] !== undefined && settings[field] !== "") out[field] = settings[field];
+  }
+
+  const projectIds = coerceOptionalArray(settings.selectedProjectIds);
+  const projectRegionIds = coerceOptionalArray(settings.selectedProjectRegionIds);
+  if (projectIds.length) out.userProjectIds = projectIds;
+
+  if (isTruthySetting(settings.currentRegionAdmin)) {
+    out.isRegionAdmin = true;
+    if (projectRegionIds.length) out.regionAdminRegionIds = projectRegionIds;
+  }
+  if (isTruthySetting(settings.currentProjectAdmin)) out.isProjectAdminProjectIds = projectIds;
+  if (isTruthySetting(settings.currentIndividualDailyReport)) out.hasIndividualSiteDiaryProjectIds = projectIds;
+  if (isTruthySetting(settings.currentDailyReportAdmin)) out.isSiteDiaryAdminProjectIds = projectIds;
+  if (isTruthySetting(settings.currentSiteNotifications)) out.receiveSiteNotificationProjectIds = projectIds;
+  if (isTruthySetting(settings.currentConfidentialData)) out.confidentialDataAccessProjectIds = projectIds;
+
+  const regionIds = coerceOptionalArray(settings.selectedRegionIds);
+  if (settings.futureAddProjects !== undefined && settings.futureAddProjects !== "") {
+    const addFuture = coerceBoolean(settings.futureAddProjects);
+    out.isAddToFutureProjects = addFuture;
+    if (addFuture && regionIds.length) out.addUserToFutureProjectsInRegionIds = regionIds;
+  }
+
+  if (isTruthySetting(settings.futureIndividualDailyReport)) out.hasIndividualSiteDiaryFutureProjectsInRegionIds = regionIds;
+  if (isTruthySetting(settings.futureDailyReportAdmin)) out.isSiteDiaryAdminFutureProjectsInRegionIds = regionIds;
+  if (isTruthySetting(settings.futureSiteNotifications)) {
+    out.receiveSiteNotificationFutureProjectsInRegionIds = regionIds;
+    out.isReceiveSiteNotificationsForFutureProjects = true;
+  }
+  if (isTruthySetting(settings.futureConfidentialData)) {
+    out.confidentialDataAccessFutureProjectsInRegionIds = regionIds;
+    out.isAccessConfidentialDataForFutureProjects = true;
+  }
+
+  return out;
 }
 
 export async function executeUserOperations(client, operations, {
@@ -331,12 +504,22 @@ function coerceArray(value) {
   return text.split(/[\n;,]+/g).map((item) => item.trim()).filter(Boolean);
 }
 
+function coerceOptionalArray(value) {
+  if (value === undefined || value === null || value === "") return [];
+  return coerceArray(value);
+}
+
 function coerceBoolean(value) {
   if (typeof value === "boolean") return value;
   const text = String(value || "").trim().toLowerCase();
   if (["true", "t", "yes", "y", "1"].includes(text)) return true;
   if (["false", "f", "no", "n", "0"].includes(text)) return false;
   throw new Error(`Expected boolean value, received "${value}".`);
+}
+
+function isTruthySetting(value) {
+  if (value === undefined || value === null || value === "") return false;
+  return coerceBoolean(value);
 }
 
 function normalizeCell(value) {
@@ -348,6 +531,15 @@ function normalizeCell(value) {
 function resolveHeader(header) {
   const key = normalizeHeader(header);
   return FIELD_ALIASES[key] || null;
+}
+
+function resolveSimpleUserHeader(header) {
+  const key = normalizeHeader(header);
+  if (["email", "name", "title", "mobile"].includes(key)) return key;
+  if (["internalid", "internalidentifier", "internaluserid", "employeeid"].includes(key)) return "internalIdentifier";
+  return FIELD_ALIASES[key] && ["email", "name", "title", "mobile", "internalIdentifier"].includes(FIELD_ALIASES[key])
+    ? FIELD_ALIASES[key]
+    : null;
 }
 
 function normalizeHeader(header) {
@@ -365,6 +557,7 @@ function buildAliases() {
   add("id", "userId", "user id", "hammertechUserId");
   for (const field of new Set([...USER_CREATE_FIELDS, ...USER_PATCH_FIELDS])) add(field);
   add("name", "fullName", "full name");
+  add("internalIdentifier", "internalId", "internal id", "internalID", "employeeId", "employee id");
   add("roleNames", "roles", "role names", "role");
   add("userProjectIds", "projectIds", "project ids", "projects");
   add("regionAdminRegionIds", "regionIds", "region ids", "adminRegionIds");
@@ -375,6 +568,20 @@ function buildAliases() {
 
 function isEmptyValue(value) {
   return value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0);
+}
+
+function validateSimpleUserBasePayload(payload) {
+  const errors = [];
+  for (const required of ["email", "name", "title"]) {
+    if (payload?.[required] === undefined || isEmptyValue(payload[required])) {
+      errors.push(`Spreadsheet rows require ${required}.`);
+    }
+  }
+  return errors;
+}
+
+function uniqueMessages(messages) {
+  return Array.from(new Set(messages.filter(Boolean)));
 }
 
 function equalsIgnoreCase(left, right) {

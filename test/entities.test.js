@@ -50,3 +50,56 @@ test("normalizePatchPayload keeps only allowed fields", () => {
     abn: "99"
   });
 });
+
+test("rowToEntityCreateOperation maps equipment profile create rows", () => {
+  const op = rowToEntityCreateOperation("equipment-profiles", {
+    make: "JLG",
+    model: "450AJ",
+    registration: "REG-1001",
+    serial: "SN-1001",
+    equipmentTypeId: "type-1",
+    serviceByMethod: "hours",
+    currentHours: "42.5",
+    isEquipmentShared: "yes",
+    canImport: "no",
+    customFieldValues: "[{\"internalName\":\"fleet\",\"value\":\"A1\"}]"
+  }, { rowNumber: 2 });
+
+  assert.deepEqual(op.errors, []);
+  assert.equal(op.name, "JLG 450AJ REG-1001");
+  assert.equal(op.payload.registrationNumber, "REG-1001");
+  assert.equal(op.payload.serialNumber, "SN-1001");
+  assert.equal(op.payload.equipmentTypeId, "type-1");
+  assert.equal(op.payload.serviceByMethod, "Hours");
+  assert.equal(op.payload.currentHours, 42.5);
+  assert.equal(op.payload.isEquipmentShared, true);
+  assert.equal(op.payload.canImport, false);
+  assert.deepEqual(op.payload.customFieldValues, [{
+    internalName: "fleet",
+    value: "A1"
+  }]);
+});
+
+test("planEntityCreateOperations reports missing equipment type", () => {
+  const plan = planEntityCreateOperations("equipment-profiles", [{
+    make: "JLG",
+    model: "450AJ"
+  }]);
+
+  assert.equal(plan.hasErrors, true);
+  assert.match(plan.operations[0].errors.join(" "), /equipmentTypeId/);
+});
+
+test("normalizePatchPayload maps equipment profile update fields", () => {
+  assert.deepEqual(normalizePatchPayload("equipment-profiles", {
+    currentHours: "12",
+    canImport: "false",
+    serviceBy: "date",
+    customFieldFormId: "ignored",
+    unknown: "ignored"
+  }), {
+    currentHours: 12,
+    canImport: false,
+    serviceByMethod: "Date"
+  });
+});

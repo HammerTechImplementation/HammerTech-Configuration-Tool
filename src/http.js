@@ -39,6 +39,23 @@ export class CookieJar {
     this.cookies.push(normalized);
   }
 
+  addCookieHeader(cookieHeader, url) {
+    const sourceUrl = new URL(url);
+    const normalizedHeader = extractCookieHeader(cookieHeader);
+    for (const pair of normalizedHeader.split(";")) {
+      const trimmed = pair.trim();
+      if (!trimmed || !trimmed.includes("=")) continue;
+      const equalsIndex = trimmed.indexOf("=");
+      this.add({
+        name: trimmed.slice(0, equalsIndex).trim(),
+        value: trimmed.slice(equalsIndex + 1).trim(),
+        domain: sourceUrl.hostname.toLowerCase(),
+        path: "/",
+        secure: sourceUrl.protocol === "https:"
+      });
+    }
+  }
+
   storeFromHeaders(url, headers) {
     const setCookies = typeof headers.getSetCookie === "function"
       ? headers.getSetCookie()
@@ -256,6 +273,46 @@ export class HammerTechClient {
     return this.request("PATCH", `/api/v1/EmployerProfiles/${encodeURIComponent(id)}`, { body: payload });
   }
 
+  listEquipmentProfiles(query = {}) {
+    return this.request("GET", "/api/v1/EquipmentProfiles", { query });
+  }
+
+  getEquipmentProfile(id) {
+    return this.request("GET", `/api/v1/EquipmentProfiles/${encodeURIComponent(id)}`);
+  }
+
+  createEquipmentProfile(payload) {
+    return this.request("POST", "/api/v1/EquipmentProfiles", { body: payload });
+  }
+
+  patchEquipmentProfile(id, payload) {
+    return this.request("PATCH", `/api/v1/EquipmentProfiles/${encodeURIComponent(id)}`, { body: payload });
+  }
+
+  deleteEquipmentProfile(id) {
+    return this.request("DELETE", `/api/v1/EquipmentProfiles/${encodeURIComponent(id)}`);
+  }
+
+  listEquipmentInductions(query = {}) {
+    return this.request("GET", "/api/v1/EquipmentInductions", { query });
+  }
+
+  getEquipmentInduction(id) {
+    return this.request("GET", `/api/v1/EquipmentInductions/${encodeURIComponent(id)}`);
+  }
+
+  createEquipmentInduction(payload) {
+    return this.request("POST", "/api/v1/EquipmentInductions", { body: payload });
+  }
+
+  patchEquipmentInduction(id, payload) {
+    return this.request("PATCH", `/api/v1/EquipmentInductions/${encodeURIComponent(id)}`, { body: payload });
+  }
+
+  deleteEquipmentInduction(id) {
+    return this.request("DELETE", `/api/v1/EquipmentInductions/${encodeURIComponent(id)}`);
+  }
+
   toSession({ tenant, email } = {}) {
     return {
       region: this.region,
@@ -339,4 +396,17 @@ function domainMatches(host, cookieDomain) {
 
 function removeUndefined(object) {
   return Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined));
+}
+
+function extractCookieHeader(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  const headerMatch = text.match(/(?:^|\r?\n|\s)cookie:\s*([^\r\n'"]+)/i);
+  if (headerMatch) return headerMatch[1].trim();
+
+  return text
+    .replace(/^cookie:\s*/i, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
 }

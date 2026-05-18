@@ -42,6 +42,9 @@ The UI has employee-facing work areas for users, projects, and employer profiles
 - `Manage Users`: retrieve users into a selectable table, filter the table, bulk update selected users, or bulk delete selected users.
 - `Manage Projects`: retrieve projects into a selectable table, filter the table, and bulk update selected projects.
 - `Manage Employers`: retrieve employer profiles into a selectable table, filter the table, and bulk update selected employer profiles.
+- `Inspection Checklists`: create a HammerTech UI session, retrieve existing inspection checklists, download the checklist template, and create or update checklists from a spreadsheet.
+
+Use **Sign In** for public API workflows. Use **Create UI Session** when you need hidden UI endpoints such as Inspection Checklists; it uses the same region, tenant, email, and password fields, captures HammerTech's tenant UI cookies in Node, and stores them locally with the bearer token.
 
 Use `PORT` to choose another port:
 
@@ -84,6 +87,7 @@ Start from one of the templates, or use **Download Template** in the local UI:
 - [docs/users-template.csv](docs/users-template.csv)
 - [docs/projects-template.csv](docs/projects-template.csv)
 - [docs/employer-profiles-template.csv](docs/employer-profiles-template.csv)
+- [docs/inspection-checklists-template.csv](docs/inspection-checklists-template.csv)
 
 The local UI spreadsheet import is create-only. Use the matching **Manage** tab for updates. User delete is available in **Manage Users**; public Project and EmployerProfile delete endpoints were not exposed in the API docs I verified.
 
@@ -103,6 +107,16 @@ Required project columns are `name`, `country`, and `timeZoneString`.
 Required employer profile column is `businessName`.
 
 Supported import file types are `.csv`, `.xlsx`, and `.xlsm`.
+
+Inspection checklist imports use the hidden tenant endpoint from HammerTech's UI:
+
+```text
+https://<tenant>.hammertechonline.com/company/api/ChecklistTypesApi
+```
+
+Creates post JSON to that endpoint. Updates use `PUT` to the same endpoint with the checklist `id` in the JSON body, matching the browser request shape. Because this endpoint is cookie-authenticated, use **Create UI Session** before loading or applying checklist changes. The UI cookies are captured by the local Node process and stored only in `.hammertech/session.json`. The advanced cookie paste field remains available for troubleshooting.
+
+Checklist spreadsheet rows are grouped by `checklistName` or `checklistId`; use `action=create` for new checklists and `action=update` with `checklistId` or `checklistName` for updates. Question rows use HammerTech UI payload fields such as `questionText`, `checklistQuestionType`, `zIndex`, and `isCompulsory`. Use `questionId` on update rows when you are updating an existing question.
 
 Dry run:
 
@@ -130,9 +144,9 @@ node ./src/cli.js users delete --id <user-uuid>
 
 ## Hidden UI APIs
 
-The tool intentionally does not use Playwright. For UI endpoints, use HTTP session cookies captured from direct login endpoints or supplied by an existing HammerTech-authenticated flow.
+The tool intentionally does not use Playwright. For employee-facing UI workflows, use the local UI's **Create UI Session** button so Node captures the HammerTech tenant cookies during login.
 
-Generic cookie capture:
+Generic cookie capture is still available for troubleshooting:
 
 ```powershell
 node ./src/cli.js auth cookie-login `

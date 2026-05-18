@@ -1,0 +1,2 @@
+owner,make,model,registrationNumber,serialNumber,lastServiced,nextService,damageComments,dateUpdated,lastServiceHours,currentHours,nextServiceHours,equipmentTypeId,employerProfileId,serviceByMethod,isEquipmentShared,canImport,customFieldFormId,customFieldValues
+Acme Rentals,JLG,450AJ,REG-1001,SN-1001,2026-01-15T08:00:00,2026-07-15T08:00:00,No visible damage,2026-05-15T08:00:00,125,160,250,replace-with-equipment-type-id,replace-with-employer-profile-id,Hours,true,true,,"[]"

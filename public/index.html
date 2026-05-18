@@ -7,18 +7,17 @@
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
-    <header class="topbar">
-      <div>
-        <div class="eyebrow">HammerTech</div>
-        <h1>Configuration Tool</h1>
-      </div>
-      <div class="session-pill" id="sessionPill">No session</div>
-    </header>
+    <div class="app-layout">
+      <aside class="sidebar" aria-label="Primary">
+        <div class="brand-block">
+          <div class="eyebrow">HammerTech</div>
+          <h1>Configuration Tool</h1>
+          <div class="session-pill" id="sessionPill">No session</div>
+        </div>
 
-    <main class="shell">
-      <section class="auth-panel" aria-labelledby="authTitle">
+        <section class="auth-panel" aria-labelledby="authTitle">
         <div class="section-heading">
-          <h2 id="authTitle">Session</h2>
+          <h2 id="authTitle">Connection</h2>
           <button class="ghost-button" id="clearSessionButton" type="button">Clear</button>
         </div>
         <form class="auth-grid" id="authForm">
@@ -42,33 +41,608 @@
             <span>Password</span>
             <input name="password" type="password" autocomplete="current-password" required>
           </label>
-          <button class="primary-button" type="submit">Sign In</button>
+          <div class="auth-actions">
+            <button class="primary-button" id="createUiSessionButton" type="button">Start Full Session</button>
+            <button class="secondary-button" type="submit">API Token Only</button>
+          </div>
         </form>
       </section>
 
-      <nav class="tabs" aria-label="Tool views">
-        <button class="tab active" type="button" data-view="importView">Spreadsheet Import</button>
-        <button class="tab" type="button" data-view="manageView">Manage Users</button>
-        <button class="tab" type="button" data-view="projectsView">Manage Projects</button>
-        <button class="tab" type="button" data-view="employersView">Manage Employers</button>
-      </nav>
+        <nav class="tabs" aria-label="Tool views">
+          <div class="nav-group open">
+            <button class="nav-group-toggle" type="button" aria-expanded="true" aria-controls="usersMenu">
+              <span class="nav-group-label">
+                <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>Users</span>
+              </span>
+              <span class="nav-group-meta">
+                <span class="tab-note">API</span>
+                <svg class="nav-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </span>
+            </button>
+            <div class="nav-submenu" id="usersMenu">
+              <button class="tab active" type="button" data-view="userImportView" aria-current="page">Spreadsheet Import</button>
+              <button class="tab" type="button" data-view="manageView">Manage</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="jobTitlesMenu">
+              <span class="nav-group-label">
+                <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M4 7V4h16v3"/>
+                  <path d="M9 20h6"/>
+                  <path d="M12 4v16"/>
+                </svg>
+                <span>Job Titles</span>
+              </span>
+              <span class="nav-group-meta">
+                <span class="tab-note full">Full</span>
+                <svg class="nav-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </span>
+            </button>
+            <div class="nav-submenu" id="jobTitlesMenu">
+              <button class="tab" type="button" data-view="jobTitleImportView">Spreadsheet Import</button>
+              <button class="tab" type="button" data-view="jobTitlesView">Manage</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="licenseTypesMenu">
+              <span class="nav-group-label">
+                <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <rect x="4" y="3" width="16" height="18" rx="2"/>
+                  <path d="M8 7h8"/>
+                  <path d="M8 11h8"/>
+                  <path d="M8 15h5"/>
+                  <path d="m15 17 2 2 4-4"/>
+                </svg>
+                <span>License Types</span>
+              </span>
+              <span class="nav-group-meta">
+                <span class="tab-note full">Full</span>
+                <svg class="nav-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </span>
+            </button>
+            <div class="nav-submenu" id="licenseTypesMenu">
+              <button class="tab" type="button" data-view="licenseTypeImportView">Spreadsheet Import</button>
+              <button class="tab" type="button" data-view="licenseTypesView">Manage</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="projectsMenu">
+              <span class="nav-group-label">
+                <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M3 21h18"/>
+                  <path d="M5 21V7l8-4v18"/>
+                  <path d="M19 21V11l-6-4"/>
+                  <path d="M9 9v.01"/>
+                  <path d="M9 13v.01"/>
+                  <path d="M9 17v.01"/>
+                </svg>
+                <span>Projects</span>
+              </span>
+              <span class="nav-group-meta">
+                <span class="tab-note">API</span>
+                <svg class="nav-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </span>
+            </button>
+            <div class="nav-submenu" id="projectsMenu">
+              <button class="tab" type="button" data-view="importView" data-import-entity="projects">Spreadsheet Import</button>
+              <button class="tab" type="button" data-view="projectsView">Manage</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="employersMenu">
+              <span class="nav-group-label">
+                <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <rect x="2" y="7" width="20" height="14" rx="2"/>
+                  <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                  <path d="M2 13h20"/>
+                  <path d="M12 13v2"/>
+                </svg>
+                <span>Employer Profiles</span>
+              </span>
+              <span class="nav-group-meta">
+                <span class="tab-note">API</span>
+                <svg class="nav-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </span>
+            </button>
+            <div class="nav-submenu" id="employersMenu">
+              <button class="tab" type="button" data-view="importView" data-import-entity="employer-profiles">Spreadsheet Import</button>
+              <button class="tab" type="button" data-view="employersView">Manage</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="equipmentMenu">
+              <span class="nav-group-label">
+                <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M3 17h18"/>
+                  <path d="M6 17V9h9l3 4v4"/>
+                  <path d="M6 9V6h6v3"/>
+                  <circle cx="7" cy="17" r="2"/>
+                  <circle cx="17" cy="17" r="2"/>
+                </svg>
+                <span>Equipment</span>
+              </span>
+              <span class="nav-group-meta">
+                <span class="tab-note">API</span>
+                <svg class="nav-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </span>
+            </button>
+            <div class="nav-submenu" id="equipmentMenu">
+              <button class="tab" type="button" data-view="importView" data-import-entity="equipment-profiles">Spreadsheet Import</button>
+              <button class="tab" type="button" data-view="equipmentView">Manage</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="checklistsMenu">
+              <span class="nav-group-label">
+                <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M9 5h6"/>
+                  <path d="M9 3h6v4H9z"/>
+                  <path d="M5 5h2"/>
+                  <path d="M17 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2"/>
+                  <path d="m8 14 2 2 5-5"/>
+                </svg>
+                <span>Inspection Checklists</span>
+              </span>
+              <span class="nav-group-meta">
+                <span class="tab-note full">Full</span>
+                <svg class="nav-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </span>
+            </button>
+            <div class="nav-submenu" id="checklistsMenu">
+              <button class="tab" type="button" data-view="checklistImportView">Spreadsheet Import</button>
+              <button class="tab" type="button" data-view="checklistsView">Manage</button>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="observationsMenu">
+              <span class="nav-group-label">
+                <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span>Observations</span>
+              </span>
+              <span class="nav-group-meta">
+                <span class="tab-note full">Full</span>
+                <svg class="nav-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </span>
+            </button>
+            <div class="nav-submenu" id="observationsMenu">
+              <button class="tab" type="button" data-view="observationImportView">Spreadsheet Import</button>
+              <button class="tab" type="button" data-view="observationsView">Manage</button>
+            </div>
+          </div>
+        </nav>
+      </aside>
 
-      <section class="view active" id="importView" aria-labelledby="importTitle">
+      <main class="shell">
+
+      <section class="view active" id="userImportView" aria-labelledby="userImportTitle">
         <div class="section-heading">
-          <h2 id="importTitle">Spreadsheet Import</h2>
+          <h2 id="userImportTitle">Users Spreadsheet Import</h2>
           <div class="actions">
-            <a class="secondary-button button-link" id="templateLink" href="/api/templates/users.csv" download>Download Template</a>
-            <button class="secondary-button" id="planButton" type="button">Dry Run</button>
-            <button class="danger-button" id="applyButton" type="button">Apply</button>
+            <a class="secondary-button button-link" href="/api/templates/users.csv" download>Download Template</a>
+            <button class="secondary-button" id="loadUserImportLookupsButton" type="button">Refresh Lists</button>
+            <button class="ghost-button reset-settings-button" type="button" data-target="#userImportSettingsForm">Reset Settings</button>
+            <button class="secondary-button" id="planUsersButton" type="button">Preview Spreadsheet</button>
+            <button class="danger-button" id="applyUsersButton" type="button" disabled>Create Users</button>
+          </div>
+        </div>
+
+        <div class="import-grid">
+          <label class="file-input">
+            <span>Spreadsheet</span>
+            <input id="userImportFile" type="file" accept=".csv,.xlsx,.xlsm">
+          </label>
+          <label>
+            <span>Sheet</span>
+            <input id="userImportSheetName" placeholder="Users">
+          </label>
+          <label class="check-label">
+            <input id="userImportContinueOnError" type="checkbox">
+            <span>Continue on error</span>
+          </label>
+        </div>
+
+        <form class="user-import-settings" id="userImportSettingsForm">
+          <div class="section-heading compact-heading">
+            <h3>Global User Settings</h3>
+          </div>
+          <div id="userImportGlobalSettings"></div>
+        </form>
+
+        <div class="status-line" id="userImportStatus">Ready</div>
+        <div class="user-import-list" id="userImportList"></div>
+        <div class="table-wrap checklist-results-wrap" id="userImportResultsWrap" hidden>
+          <table>
+            <thead>
+              <tr>
+                <th>Row</th>
+                <th>User</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="userImportResults"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="jobTitleImportView" aria-labelledby="jobTitleImportTitle">
+        <div class="section-heading">
+          <h2 id="jobTitleImportTitle">Job Titles Spreadsheet Import</h2>
+          <div class="actions">
+            <a class="secondary-button button-link" href="/api/templates/job-titles.csv" download>Download Template</a>
+            <button class="secondary-button" id="planJobTitlesButton" type="button">Preview Spreadsheet</button>
+            <button class="danger-button" id="applyJobTitlesButton" type="button" disabled>Create Job Titles</button>
           </div>
         </div>
         <div class="import-grid">
+          <label class="file-input">
+            <span>Spreadsheet</span>
+            <input id="jobTitleImportFile" type="file" accept=".csv,.xlsx,.xlsm">
+          </label>
           <label>
+            <span>Sheet</span>
+            <input id="jobTitleImportSheetName" placeholder="Job Titles">
+          </label>
+          <label class="check-label">
+            <input id="jobTitleSkipExisting" type="checkbox" checked>
+            <span>Skip existing</span>
+          </label>
+          <label class="check-label">
+            <input id="jobTitleContinueOnError" type="checkbox">
+            <span>Continue on error</span>
+          </label>
+        </div>
+        <div class="status-line" id="jobTitleImportStatus">Ready</div>
+        <div class="table-wrap checklist-results-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Row</th>
+                <th>Job Title</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="jobTitleImportResults"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="jobTitlesView" aria-labelledby="jobTitlesTitle">
+        <div class="section-heading">
+          <h2 id="jobTitlesTitle">Manage Job Titles</h2>
+          <div class="actions">
+            <label class="search-field">
+              <span>Search</span>
+              <input id="jobTitleSearch" placeholder="Job title or ID">
+            </label>
+          </div>
+        </div>
+        <div class="bulk-toolbar">
+          <div class="selection-count" id="jobTitleSelectionCount">0 selected</div>
+          <button class="secondary-button" id="loadJobTitlesButton" type="button">Refresh</button>
+          <button class="ghost-button" id="selectVisibleJobTitlesButton" type="button">Select Visible</button>
+          <button class="ghost-button" id="clearJobTitleSelectionButton" type="button">Clear Selection</button>
+          <button class="secondary-button" id="previewJobTitleDeleteButton" type="button">Preview Delete</button>
+          <button class="danger-button" id="bulkJobTitleDeleteButton" type="button" disabled>Delete Selected</button>
+        </div>
+        <div class="table-wrap user-list-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="select-col">
+                  <input id="selectAllJobTitles" type="checkbox" aria-label="Select all visible job titles">
+                </th>
+                <th>Job Title</th>
+                <th>ID</th>
+              </tr>
+            </thead>
+            <tbody id="jobTitlesTable"></tbody>
+          </table>
+        </div>
+        <label class="check-label">
+          <input id="jobTitleDeleteContinueOnError" type="checkbox">
+          <span>Continue on delete error</span>
+        </label>
+        <div class="status-line" id="jobTitlesStatus">Ready</div>
+      </section>
+
+      <section class="view" id="licenseTypeImportView" aria-labelledby="licenseTypeImportTitle">
+        <div class="section-heading">
+          <h2 id="licenseTypeImportTitle">License Types Spreadsheet Import</h2>
+          <div class="actions">
+            <a class="secondary-button button-link" href="/api/templates/license-types.csv" download>Download Template</a>
+            <button class="secondary-button" id="planLicenseTypesButton" type="button">Preview Spreadsheet</button>
+            <button class="danger-button" id="applyLicenseTypesButton" type="button" disabled>Create License Types</button>
+          </div>
+        </div>
+        <div class="import-grid">
+          <label class="file-input">
+            <span>Spreadsheet</span>
+            <input id="licenseTypeImportFile" type="file" accept=".csv,.xlsx,.xlsm">
+          </label>
+          <label>
+            <span>Sheet</span>
+            <input id="licenseTypeImportSheetName" placeholder="License Types">
+          </label>
+          <label class="check-label">
+            <input id="licenseTypeSkipExisting" type="checkbox" checked>
+            <span>Skip existing</span>
+          </label>
+          <label class="check-label">
+            <input id="licenseTypeContinueOnError" type="checkbox">
+            <span>Continue on error</span>
+          </label>
+        </div>
+        <div class="status-line" id="licenseTypeImportStatus">Ready</div>
+        <div class="table-wrap checklist-results-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Row</th>
+                <th>License Type</th>
+                <th>Code</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="licenseTypeImportResults"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="licenseTypesView" aria-labelledby="licenseTypesTitle">
+        <div class="section-heading">
+          <h2 id="licenseTypesTitle">Manage License Types</h2>
+          <div class="actions">
+            <label class="search-field">
+              <span>Search</span>
+              <input id="licenseTypeSearch" placeholder="Name, category, code, or ID">
+            </label>
+          </div>
+        </div>
+        <div class="bulk-toolbar">
+          <div class="selection-count" id="licenseTypeSelectionCount">0 selected</div>
+          <button class="ghost-button" id="selectVisibleLicenseTypesButton" type="button">Select Visible</button>
+          <button class="ghost-button" id="clearLicenseTypeSelectionButton" type="button">Clear Selection</button>
+        </div>
+        <div class="bulk-layout">
+          <div class="table-wrap user-list-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="select-col">
+                    <input id="selectAllLicenseTypes" type="checkbox" aria-label="Select all visible license types">
+                  </th>
+                  <th>License Type</th>
+                  <th>Category</th>
+                  <th>Code</th>
+                  <th>Flags</th>
+                  <th>ID</th>
+                </tr>
+              </thead>
+              <tbody id="licenseTypesTable"></tbody>
+            </table>
+          </div>
+          <form class="detail-panel" id="bulkLicenseTypeUpdateForm">
+            <h3>Bulk Update</h3>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="Category">
+              <span>Set category</span>
+            </label>
+            <label>
+              <span>Category</span>
+              <select name="Category" id="licenseBulkCategory">
+                <option value="">Select</option>
+                <option value="0">No Category</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="IsPriority">
+              <span>Set priority license</span>
+            </label>
+            <label>
+              <span>Priority License</span>
+              <select name="IsPriority">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="IsCompulsoryForInduction">
+              <span>Set compulsory for induction</span>
+            </label>
+            <label>
+              <span>Compulsory For Induction</span>
+              <select name="IsCompulsoryForInduction">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="HasExpiryDate">
+              <span>Set expiry date</span>
+            </label>
+            <label>
+              <span>Has Expiry Date</span>
+              <select name="HasExpiryDate">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="HasIssueDate">
+              <span>Set issue date</span>
+            </label>
+            <label>
+              <span>Has Issue Date</span>
+              <select name="HasIssueDate">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="HasRefreshmentDate">
+              <span>Set refreshment date</span>
+            </label>
+            <label>
+              <span>Has Refreshment Date</span>
+              <select name="HasRefreshmentDate">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="HasIssuer">
+              <span>Set issuer</span>
+            </label>
+            <label>
+              <span>Has Issuer</span>
+              <select name="HasIssuer">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="HasLicenseNo">
+              <span>Set license number</span>
+            </label>
+            <label>
+              <span>Has License No</span>
+              <select name="HasLicenseNo">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="HasLicensePhoto">
+              <span>Set license photo</span>
+            </label>
+            <label>
+              <span>Has License Photo</span>
+              <select name="HasLicensePhoto">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="IsLicenceFrontPhotoMandatory">
+              <span>Set front photo mandatory</span>
+            </label>
+            <label>
+              <span>Front Photo Mandatory</span>
+              <select name="IsLicenceFrontPhotoMandatory">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="IsLicenceBackPhotoMandatory">
+              <span>Set back photo mandatory</span>
+            </label>
+            <label>
+              <span>Back Photo Mandatory</span>
+              <select name="IsLicenceBackPhotoMandatory">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="IsFileUploadEnabled">
+              <span>Set file upload enabled</span>
+            </label>
+            <label>
+              <span>File Upload Enabled</span>
+              <select name="IsFileUploadEnabled">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="IsFileUploadRequired">
+              <span>Set file upload required</span>
+            </label>
+            <label>
+              <span>File Upload Required</span>
+              <select name="IsFileUploadRequired">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="continueOnError" type="checkbox">
+              <span>Continue on error</span>
+            </label>
+            <div class="actions detail-actions stacked-actions">
+              <button class="secondary-button" id="loadLicenseTypesButton" type="button">Refresh</button>
+              <button class="secondary-button" id="loadLicenseCategoriesButton" type="button">Refresh Categories</button>
+              <button class="ghost-button reset-settings-button" type="button" data-target="#bulkLicenseTypeUpdateForm">Reset Settings</button>
+              <button class="secondary-button" id="previewLicenseTypeUpdateButton" type="button">Preview Update</button>
+              <button class="secondary-button" id="bulkLicenseTypeUpdateButton" type="submit" disabled>Update Selected</button>
+              <button class="secondary-button" id="previewLicenseTypeDeleteButton" type="button">Preview Delete</button>
+              <button class="danger-button" id="bulkLicenseTypeDeleteButton" type="button" disabled>Delete Selected</button>
+            </div>
+          </form>
+        </div>
+        <div class="status-line" id="licenseTypesStatus">Ready</div>
+      </section>
+
+      <section class="view" id="importView" aria-labelledby="importTitle">
+        <div class="section-heading">
+          <h2 id="importTitle">Users Spreadsheet Import</h2>
+          <div class="actions">
+            <a class="secondary-button button-link" id="templateLink" href="/api/templates/users.csv" download>Download Template</a>
+            <button class="secondary-button" id="planButton" type="button">Dry Run</button>
+            <button class="danger-button" id="applyButton" type="button" disabled>Apply</button>
+          </div>
+        </div>
+        <div class="import-grid">
+          <label class="module-picker">
             <span>Import Type</span>
             <select id="importEntity">
               <option value="users">Users</option>
               <option value="projects">Projects</option>
               <option value="employer-profiles">Employer Profiles</option>
+              <option value="equipment-profiles">Equipment Profiles</option>
             </select>
           </label>
           <label class="file-input">
@@ -112,7 +686,6 @@
               <span>Search</span>
               <input id="userSearch" placeholder="Name or email">
             </label>
-            <button class="secondary-button" id="loadUsersButton" type="button">Refresh</button>
           </div>
         </div>
         <div class="bulk-toolbar">
@@ -182,8 +755,12 @@
               <span>Continue on error</span>
             </label>
             <div class="actions detail-actions stacked-actions">
-              <button class="secondary-button" type="submit">Update Selected</button>
-              <button class="danger-button" id="bulkDeleteButton" type="button">Delete Selected</button>
+              <button class="secondary-button" id="loadUsersButton" type="button">Refresh</button>
+              <button class="ghost-button reset-settings-button" type="button" data-target="#bulkUpdateForm">Reset Settings</button>
+              <button class="secondary-button" id="previewUserUpdateButton" type="button">Preview Update</button>
+              <button class="secondary-button" id="bulkUserUpdateButton" type="submit" disabled>Update Selected</button>
+              <button class="secondary-button" id="previewUserDeleteButton" type="button">Preview Delete</button>
+              <button class="danger-button" id="bulkDeleteButton" type="button" disabled>Delete Selected</button>
             </div>
           </form>
         </div>
@@ -202,7 +779,6 @@
               <span>Search</span>
               <input id="projectSearch" placeholder="Name, client, or ID">
             </label>
-            <button class="secondary-button" id="loadProjectsButton" type="button">Refresh</button>
           </div>
         </div>
         <div class="bulk-toolbar">
@@ -283,7 +859,10 @@
               <span>Continue on error</span>
             </label>
             <div class="actions detail-actions stacked-actions">
-              <button class="secondary-button" type="submit">Update Selected</button>
+              <button class="secondary-button" id="loadProjectsButton" type="button">Refresh</button>
+              <button class="ghost-button reset-settings-button" type="button" data-target="#bulkProjectUpdateForm">Reset Settings</button>
+              <button class="secondary-button" id="previewProjectUpdateButton" type="button">Preview Update</button>
+              <button class="secondary-button" id="bulkProjectUpdateButton" type="submit" disabled>Update Selected</button>
             </div>
           </form>
         </div>
@@ -298,7 +877,6 @@
               <span>Search</span>
               <input id="employerSearch" placeholder="Business name or ID">
             </label>
-            <button class="secondary-button" id="loadEmployersButton" type="button">Refresh</button>
           </div>
         </div>
         <div class="bulk-toolbar">
@@ -354,13 +932,1038 @@
               <span>Continue on error</span>
             </label>
             <div class="actions detail-actions stacked-actions">
-              <button class="secondary-button" type="submit">Update Selected</button>
+              <button class="secondary-button" id="loadEmployersButton" type="button">Refresh</button>
+              <button class="ghost-button reset-settings-button" type="button" data-target="#bulkEmployerUpdateForm">Reset Settings</button>
+              <button class="secondary-button" id="previewEmployerUpdateButton" type="button">Preview Update</button>
+              <button class="secondary-button" id="bulkEmployerUpdateButton" type="submit" disabled>Update Selected</button>
             </div>
           </form>
         </div>
         <div class="status-line" id="employersStatus">Ready</div>
       </section>
+
+      <section class="view" id="equipmentView" aria-labelledby="equipmentTitle">
+        <div class="section-heading">
+          <h2 id="equipmentTitle">Manage Equipment Profiles</h2>
+          <div class="actions">
+            <label class="search-field">
+              <span>Search</span>
+              <input id="equipmentSearch" placeholder="Make, model, owner, registration, serial, or ID">
+            </label>
+          </div>
+        </div>
+        <div class="bulk-toolbar">
+          <div class="selection-count" id="equipmentSelectionCount">0 selected</div>
+          <button class="ghost-button" id="selectVisibleEquipmentButton" type="button">Select Visible</button>
+          <button class="ghost-button" id="clearEquipmentSelectionButton" type="button">Clear Selection</button>
+        </div>
+        <div class="bulk-layout">
+          <div class="table-wrap user-list-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="select-col">
+                    <input id="selectAllEquipment" type="checkbox" aria-label="Select all visible equipment profiles">
+                  </th>
+                  <th>Equipment</th>
+                  <th>Owner</th>
+                  <th>Registration</th>
+                  <th>Serial</th>
+                  <th>Type</th>
+                  <th>ID</th>
+                </tr>
+              </thead>
+              <tbody id="equipmentTable"></tbody>
+            </table>
+          </div>
+          <form class="detail-panel" id="bulkEquipmentUpdateForm">
+            <h3>Bulk Update</h3>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="owner">
+              <span>Set owner</span>
+            </label>
+            <label>
+              <span>Owner</span>
+              <input name="owner">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="make">
+              <span>Set make</span>
+            </label>
+            <label>
+              <span>Make</span>
+              <input name="make">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="model">
+              <span>Set model</span>
+            </label>
+            <label>
+              <span>Model</span>
+              <input name="model">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="registrationNumber">
+              <span>Set registration</span>
+            </label>
+            <label>
+              <span>Registration Number</span>
+              <input name="registrationNumber">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="serialNumber">
+              <span>Set serial</span>
+            </label>
+            <label>
+              <span>Serial Number</span>
+              <input name="serialNumber">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="equipmentTypeId">
+              <span>Set equipment type</span>
+            </label>
+            <label>
+              <span>Equipment Type ID</span>
+              <input name="equipmentTypeId">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="employerProfileId">
+              <span>Set employer profile</span>
+            </label>
+            <label>
+              <span>Employer Profile ID</span>
+              <input name="employerProfileId">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="serviceByMethod">
+              <span>Set service method</span>
+            </label>
+            <label>
+              <span>Service By</span>
+              <select name="serviceByMethod">
+                <option value="">Select</option>
+                <option value="Date">Date</option>
+                <option value="Hours">Hours</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="lastServiced">
+              <span>Set last serviced</span>
+            </label>
+            <label>
+              <span>Last Serviced</span>
+              <input name="lastServiced" placeholder="2026-01-15T08:00:00">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="nextService">
+              <span>Set next service</span>
+            </label>
+            <label>
+              <span>Next Service</span>
+              <input name="nextService" placeholder="2026-07-15T08:00:00">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="lastServiceHours">
+              <span>Set last service hours</span>
+            </label>
+            <label>
+              <span>Last Service Hours</span>
+              <input name="lastServiceHours" type="number" step="any">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="currentHours">
+              <span>Set current hours</span>
+            </label>
+            <label>
+              <span>Current Hours</span>
+              <input name="currentHours" type="number" step="any">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="nextServiceHours">
+              <span>Set next service hours</span>
+            </label>
+            <label>
+              <span>Next Service Hours</span>
+              <input name="nextServiceHours" type="number" step="any">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="isEquipmentShared">
+              <span>Set shared</span>
+            </label>
+            <label>
+              <span>Shared Equipment</span>
+              <select name="isEquipmentShared">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="canImport">
+              <span>Set can import</span>
+            </label>
+            <label>
+              <span>Can Import</span>
+              <select name="canImport">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="damageComments">
+              <span>Set damage comments</span>
+            </label>
+            <label class="wide-field">
+              <span>Damage Comments</span>
+              <textarea name="damageComments"></textarea>
+            </label>
+            <label class="check-label">
+              <input name="continueOnError" type="checkbox">
+              <span>Continue on error</span>
+            </label>
+            <div class="actions detail-actions stacked-actions">
+              <button class="secondary-button" id="loadEquipmentButton" type="button">Refresh</button>
+              <button class="ghost-button reset-settings-button" type="button" data-target="#bulkEquipmentUpdateForm">Reset Settings</button>
+              <button class="secondary-button" id="previewEquipmentUpdateButton" type="button">Preview Update</button>
+              <button class="secondary-button" id="bulkEquipmentUpdateButton" type="submit" disabled>Update Selected</button>
+              <button class="secondary-button" id="previewEquipmentDeleteButton" type="button">Preview Delete</button>
+              <button class="danger-button" id="bulkEquipmentDeleteButton" type="button" disabled>Delete Selected</button>
+            </div>
+          </form>
+        </div>
+        <div class="status-line" id="equipmentStatus">Ready</div>
+
+        <form class="equipment-assignment-settings" id="equipmentAssignmentForm">
+          <div class="section-heading compact-heading">
+            <h3>Assign Equipment To Projects</h3>
+            <div class="actions">
+              <button class="secondary-button" id="loadEquipmentProjectsButton" type="button">Refresh Projects</button>
+              <button class="ghost-button reset-settings-button" type="button" data-target="#equipmentAssignmentForm">Reset Settings</button>
+              <button class="secondary-button" id="previewEquipmentAssignmentsButton" type="button">Preview Assignments</button>
+              <button class="danger-button" id="createEquipmentAssignmentsButton" type="button" disabled>Create Assignments</button>
+            </div>
+          </div>
+          <div class="settings-grid">
+            <fieldset class="wide-field">
+              <legend>Global Projects</legend>
+              <label>
+                <span>Project Names</span>
+                <select name="projectIds" multiple size="8" id="equipmentAssignmentProjectIds"></select>
+              </label>
+              <div class="select-actions">
+                <button class="ghost-button select-options-button" type="button" data-select-name="projectIds" data-action="select">Select All</button>
+                <button class="ghost-button select-options-button" type="button" data-select-name="projectIds" data-action="clear">Clear</button>
+              </div>
+              <div class="inline-hint">Assignments use the selected equipment profiles above. Expand an equipment row below to override projects or required fields for that equipment only.</div>
+            </fieldset>
+            <fieldset>
+              <legend>Dates</legend>
+              <label>
+                <span>Induction Date</span>
+                <input name="inductionDate" type="datetime-local">
+              </label>
+              <label>
+                <span>Date Updated</span>
+                <input name="dateUpdated" type="datetime-local">
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend>Required Checks</legend>
+              <label>
+                <span>Service Record Available</span>
+                <select name="serviceRecordAvailable">
+                  <option value="">Select</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label>
+                <span>Good Condition</span>
+                <select name="isGoodCondition">
+                  <option value="">Select</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label>
+                <span>Inspection Failed</span>
+                <select name="isInspectionFailed">
+                  <option value="">Select</option>
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
+                </select>
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend>Options</legend>
+              <label class="check-label">
+                <input name="skipExisting" type="checkbox" checked>
+                <span>Skip existing assignments</span>
+              </label>
+              <label class="check-label">
+                <input name="continueOnError" type="checkbox">
+                <span>Continue on error</span>
+              </label>
+            </fieldset>
+          </div>
+        </form>
+        <div class="equipment-assignment-list" id="equipmentAssignmentOverrides"></div>
+        <div class="status-line" id="equipmentAssignmentStatus">Select equipment profiles and projects to create assignments.</div>
+
+        <section class="equipment-inductions-panel" aria-labelledby="equipmentInductionsTitle">
+          <div class="section-heading compact-heading">
+            <h3 id="equipmentInductionsTitle">Manage Project Assignments</h3>
+            <div class="actions">
+              <label>
+                <span>Project Filter</span>
+                <select id="equipmentInductionProjectFilter">
+                  <option value="">All projects</option>
+                </select>
+              </label>
+              <label class="check-label compact">
+                <input id="includeDeletedEquipmentInductions" type="checkbox">
+                <span>Deleted</span>
+              </label>
+              <label class="search-field">
+                <span>Search</span>
+                <input id="equipmentInductionSearch" placeholder="Equipment, project, status, or ID">
+              </label>
+            </div>
+          </div>
+          <div class="bulk-toolbar">
+            <div class="selection-count" id="equipmentInductionSelectionCount">0 selected</div>
+            <button class="ghost-button" id="selectVisibleEquipmentInductionsButton" type="button">Select Visible</button>
+            <button class="ghost-button" id="clearEquipmentInductionSelectionButton" type="button">Clear Selection</button>
+          </div>
+          <div class="bulk-layout">
+            <div class="table-wrap user-list-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="select-col">
+                      <input id="selectAllEquipmentInductions" type="checkbox" aria-label="Select all visible equipment assignments">
+                    </th>
+                    <th>Equipment</th>
+                    <th>Project</th>
+                    <th>Induction Date</th>
+                    <th>Status</th>
+                    <th>ID</th>
+                  </tr>
+                </thead>
+                <tbody id="equipmentInductionsTable"></tbody>
+              </table>
+            </div>
+            <form class="detail-panel" id="bulkEquipmentInductionUpdateForm">
+              <h3>Bulk Update Assignments</h3>
+              <label class="check-label">
+                <input name="enabledFields" type="checkbox" value="projectId">
+                <span>Move to project</span>
+              </label>
+              <label>
+                <span>Project</span>
+                <select name="projectId" id="equipmentInductionUpdateProjectId">
+                  <option value="">Select</option>
+                </select>
+              </label>
+              <label class="check-label">
+                <input name="enabledFields" type="checkbox" value="inductionDate">
+                <span>Set induction date</span>
+              </label>
+              <label>
+                <span>Induction Date</span>
+                <input name="inductionDate" type="datetime-local">
+              </label>
+              <label class="check-label">
+                <input name="enabledFields" type="checkbox" value="dateUpdated">
+                <span>Set date updated</span>
+              </label>
+              <label>
+                <span>Date Updated</span>
+                <input name="dateUpdated" type="datetime-local">
+              </label>
+              <label class="check-label">
+                <input name="enabledFields" type="checkbox" value="serviceRecordAvailable">
+                <span>Set service record</span>
+              </label>
+              <label>
+                <span>Service Record Available</span>
+                <select name="serviceRecordAvailable">
+                  <option value="">Select</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label class="check-label">
+                <input name="enabledFields" type="checkbox" value="isGoodCondition">
+                <span>Set condition</span>
+              </label>
+              <label>
+                <span>Good Condition</span>
+                <select name="isGoodCondition">
+                  <option value="">Select</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label class="check-label">
+                <input name="enabledFields" type="checkbox" value="isInspectionFailed">
+                <span>Set inspection failed</span>
+              </label>
+              <label>
+                <span>Inspection Failed</span>
+                <select name="isInspectionFailed">
+                  <option value="">Select</option>
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
+                </select>
+              </label>
+              <label class="check-label">
+                <input name="continueOnError" type="checkbox">
+                <span>Continue on error</span>
+              </label>
+              <div class="actions detail-actions stacked-actions">
+                <button class="secondary-button" id="loadEquipmentInductionsButton" type="button">Refresh Assignments</button>
+                <button class="ghost-button reset-settings-button" type="button" data-target="#bulkEquipmentInductionUpdateForm">Reset Settings</button>
+                <button class="secondary-button" id="previewEquipmentInductionUpdateButton" type="button">Preview Update</button>
+                <button class="secondary-button" id="bulkEquipmentInductionUpdateButton" type="submit" disabled>Update Selected</button>
+                <button class="secondary-button" id="previewEquipmentInductionDeleteButton" type="button">Preview Delete</button>
+                <button class="danger-button" id="bulkEquipmentInductionDeleteButton" type="button" disabled>Delete Selected</button>
+              </div>
+            </form>
+          </div>
+          <div class="status-line" id="equipmentInductionsStatus">Ready</div>
+        </section>
+      </section>
+
+      <section class="view" id="checklistImportView" aria-labelledby="checklistImportTitle">
+        <div class="section-heading">
+          <h2 id="checklistImportTitle">Inspection Checklists Spreadsheet Import</h2>
+          <div class="actions">
+            <a class="secondary-button button-link" href="/api/templates/inspection-checklists.csv" download>Download Template</a>
+            <button class="ghost-button reset-settings-button" type="button" data-target="#checklistImportSettingsForm">Reset Settings</button>
+            <button class="secondary-button" id="planChecklistsButton" type="button">Preview Spreadsheet</button>
+            <button class="danger-button" id="applyChecklistsButton" type="button" disabled>Create Checklists</button>
+          </div>
+        </div>
+
+        <div class="import-grid checklist-import-grid">
+          <label class="file-input">
+            <span>Spreadsheet</span>
+            <input id="checklistFile" type="file" accept=".csv,.xlsx,.xlsm">
+          </label>
+          <label>
+            <span>Sheet</span>
+            <input id="checklistSheetName" placeholder="Inspection Checklists">
+          </label>
+          <label class="check-label">
+            <input id="checklistContinueOnError" type="checkbox">
+            <span>Continue on error</span>
+          </label>
+        </div>
+
+        <form class="checklist-import-settings" id="checklistImportSettingsForm">
+          <div class="section-heading compact-heading">
+            <h3>Global Checklist Settings</h3>
+          </div>
+          <div class="settings-grid">
+            <fieldset>
+              <legend>Question</legend>
+              <label>
+                <span>Question Type</span>
+                <select name="questionType">
+                  <option value="3" selected>Yes / No / N/A</option>
+                  <option value="2">Yes / No</option>
+                </select>
+              </label>
+              <label>
+                <span>Question Is Compulsory</span>
+                <select name="isCompulsory">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label>
+                <span>Question Can Be Ignored</span>
+                <select name="excludeFromChecklistCompleteCheck">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Custom Text</legend>
+              <label>
+                <span>For Yes</span>
+                <input name="yesText" placeholder="Yes">
+              </label>
+              <label>
+                <span>For No</span>
+                <input name="noText" placeholder="No">
+              </label>
+              <label>
+                <span>For N/A</span>
+                <input name="naText" placeholder="N/A">
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Default Observation</legend>
+              <label>
+                <span>Default Type</span>
+                <select name="defaultIssueTypeId" id="checklistImportDefaultObservationTypeSelect">
+                  <option value="">No default</option>
+                  <option value="__clear">Clear</option>
+                </select>
+              </label>
+              <label>
+                <span>Force Default Type</span>
+                <select name="isDefaultIssueTypeForced">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label>
+                <span>Default Priority</span>
+                <select name="defaultIssuePriority">
+                  <option value="">No change</option>
+                  <option value="__clear">Clear</option>
+                  <option value="0">Low</option>
+                  <option value="1">Medium</option>
+                  <option value="2">High</option>
+                  <option value="3">Critical</option>
+                </select>
+              </label>
+            </fieldset>
+
+            <fieldset class="wide-field">
+              <legend>Observations</legend>
+              <div class="three-col">
+                <label>
+                  <span>Raise On Yes</span>
+                  <select name="raiseObservationOnYesOption">
+                    <option value="">No change</option>
+                    <option value="0">Do Not Raise</option>
+                    <option value="1">Allow To Be Raised</option>
+                    <option value="2">Automatically Raise</option>
+                    <option value="compulsory">Compulsory on Status</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Raise On No</span>
+                  <select name="raiseObservationOnNoOption">
+                    <option value="">No change</option>
+                    <option value="0">Do Not Raise</option>
+                    <option value="1">Allow To Be Raised</option>
+                    <option value="2">Automatically Raise</option>
+                    <option value="compulsory">Compulsory on Status</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Raise On N/A</span>
+                  <select name="raiseObservationOnNaOption">
+                    <option value="">No change</option>
+                    <option value="0">Do Not Raise</option>
+                    <option value="1">Allow To Be Raised</option>
+                    <option value="2">Automatically Raise</option>
+                    <option value="compulsory">Compulsory on Status</option>
+                  </select>
+                </label>
+              </div>
+              <div class="three-col">
+                <label>
+                  <span>Yes Type</span>
+                  <select name="issueDefaultObservationTypeOnYes">
+                    <option value="">No change</option>
+                    <option value="0">Clear</option>
+                    <option value="1">Positive</option>
+                    <option value="-1">Negative</option>
+                  </select>
+                </label>
+                <label>
+                  <span>No Type</span>
+                  <select name="issueDefaultObservationTypeOnNo">
+                    <option value="">No change</option>
+                    <option value="0">Clear</option>
+                    <option value="1">Positive</option>
+                    <option value="-1">Negative</option>
+                  </select>
+                </label>
+                <label>
+                  <span>N/A Type</span>
+                  <select name="issueDefaultObservationTypeOnNa">
+                    <option value="">No change</option>
+                    <option value="0">Clear</option>
+                    <option value="1">Positive</option>
+                    <option value="-1">Negative</option>
+                  </select>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Audit Score</legend>
+              <label>
+                <span>On Yes</span>
+                <input name="auditScoreOnYes" inputmode="decimal">
+              </label>
+              <label>
+                <span>On No</span>
+                <input name="auditScoreOnNo" inputmode="decimal">
+              </label>
+              <label>
+                <span>On N/A</span>
+                <input name="auditScoreOnNa" inputmode="decimal">
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Signature</legend>
+              <label>
+                <span>On Yes</span>
+                <select name="signatureOnYes">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label>
+                <span>On No</span>
+                <select name="signatureOnNo">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label>
+                <span>On N/A</span>
+                <select name="signatureOnNa">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+            </fieldset>
+          </div>
+        </form>
+
+        <div class="status-line" id="checklistImportStatus">Ready</div>
+        <div class="checklist-import-list" id="checklistImportList"></div>
+        <div class="table-wrap checklist-results-wrap" id="checklistImportResultsWrap" hidden>
+          <table>
+            <thead>
+              <tr>
+                <th>Rows</th>
+                <th>Checklist</th>
+                <th>Questions</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="checklistImportResults"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="checklistsView" aria-labelledby="checklistsTitle">
+        <div class="section-heading">
+          <h2 id="checklistsTitle">Manage Inspection Checklists</h2>
+        </div>
+
+        <details class="advanced-panel">
+          <summary>Advanced Cookie Session</summary>
+          <form class="cookie-panel" id="browserCookieForm">
+            <label>
+              <span>Region</span>
+              <select name="region">
+                <option value="us">US</option>
+                <option value="au">AU</option>
+                <option value="eu">EU</option>
+              </select>
+            </label>
+            <label>
+              <span>Tenant</span>
+              <input name="tenant" autocomplete="organization">
+            </label>
+            <label class="wide-field">
+              <span>Browser Cookie Header</span>
+              <textarea name="cookieHeader" spellcheck="false"></textarea>
+            </label>
+            <button class="primary-button" type="submit">Save Cookie</button>
+          </form>
+        </details>
+
+        <form class="checklist-updater" id="checklistBulkForm">
+          <div class="section-heading compact-heading">
+            <h3>Checklist Updater</h3>
+            <div class="actions">
+              <button class="secondary-button" id="loadChecklistsButton" type="button">Refresh</button>
+              <button class="ghost-button reset-settings-button" type="button" data-target="#checklistBulkForm">Reset Settings</button>
+              <button class="secondary-button" id="previewChecklistBulkButton" type="button">Preview</button>
+              <button class="danger-button" id="applyChecklistBulkButton" type="button" disabled>Update Checklists</button>
+            </div>
+          </div>
+          <div class="updater-grid">
+            <div class="checklist-picker-panel">
+              <div class="subsection-heading">
+                <h4>Checklists</h4>
+                <button class="secondary-button" id="loadChecklistForBulkButton" type="button">Load Selected</button>
+              </div>
+              <select id="bulkChecklistSelect" multiple size="8" required aria-label="Checklists">
+                <option value="" disabled>Refresh checklists first</option>
+              </select>
+              <div class="summary-strip" id="checklistBulkSummary">No checklist selected</div>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <fieldset>
+              <legend>Question</legend>
+              <label>
+                <span>Question Type</span>
+                <select name="questionType">
+                  <option value="">No change</option>
+                  <option value="2">Yes / No</option>
+                  <option value="3">Yes / No / N/A</option>
+                </select>
+              </label>
+              <label>
+                <span>Question Is Compulsory</span>
+                <select name="isCompulsory">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label>
+                <span>Question Can Be Ignored</span>
+                <select name="excludeFromChecklistCompleteCheck">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Custom Text</legend>
+              <label>
+                <span>For Yes</span>
+                <input name="yesText" placeholder="Yes">
+              </label>
+              <label>
+                <span>For No</span>
+                <input name="noText" placeholder="No">
+              </label>
+              <label>
+                <span>For N/A</span>
+                <input name="naText" placeholder="N/A">
+              </label>
+            </fieldset>
+
+            <fieldset class="wide-field">
+              <legend>Observations</legend>
+              <div class="three-col">
+                <label>
+                  <span>Raise On Yes</span>
+                  <select name="raiseObservationOnYesOption">
+                    <option value="">No change</option>
+                    <option value="0">Do Not Raise</option>
+                    <option value="1">Allow To Be Raised</option>
+                    <option value="2">Automatically Raise</option>
+                    <option value="compulsory">Compulsory on Status</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Raise On No</span>
+                  <select name="raiseObservationOnNoOption">
+                    <option value="">No change</option>
+                    <option value="0">Do Not Raise</option>
+                    <option value="1">Allow To Be Raised</option>
+                    <option value="2">Automatically Raise</option>
+                    <option value="compulsory">Compulsory on Status</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Raise On N/A</span>
+                  <select name="raiseObservationOnNaOption">
+                    <option value="">No change</option>
+                    <option value="0">Do Not Raise</option>
+                    <option value="1">Allow To Be Raised</option>
+                    <option value="2">Automatically Raise</option>
+                    <option value="compulsory">Compulsory on Status</option>
+                  </select>
+                </label>
+              </div>
+              <div class="three-col">
+                <label>
+                  <span>Yes Type</span>
+                  <select name="issueDefaultObservationTypeOnYes">
+                    <option value="">No change</option>
+                    <option value="0">Clear</option>
+                    <option value="1">Positive</option>
+                    <option value="-1">Negative</option>
+                  </select>
+                </label>
+                <label>
+                  <span>No Type</span>
+                  <select name="issueDefaultObservationTypeOnNo">
+                    <option value="">No change</option>
+                    <option value="0">Clear</option>
+                    <option value="1">Positive</option>
+                    <option value="-1">Negative</option>
+                  </select>
+                </label>
+                <label>
+                  <span>N/A Type</span>
+                  <select name="issueDefaultObservationTypeOnNa">
+                    <option value="">No change</option>
+                    <option value="0">Clear</option>
+                    <option value="1">Positive</option>
+                    <option value="-1">Negative</option>
+                  </select>
+                </label>
+              </div>
+              <div class="three-col">
+                <label>
+                  <span>Force Yes</span>
+                  <select name="isIssueDefaultObservationTypeOnYesLocked">
+                    <option value="">No change</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Force No</span>
+                  <select name="isIssueDefaultObservationTypeOnNoLocked">
+                    <option value="">No change</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Force N/A</span>
+                  <select name="isIssueDefaultObservationTypeOnNaLocked">
+                    <option value="">No change</option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Default Observation</legend>
+              <label>
+                <span>Default Type</span>
+                <select name="defaultIssueTypeId" id="defaultObservationTypeSelect">
+                  <option value="">No change</option>
+                  <option value="__clear">Clear</option>
+                </select>
+              </label>
+              <label>
+                <span>Force Default Type</span>
+                <select name="isDefaultIssueTypeForced">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label>
+                <span>Default Priority</span>
+                <select name="defaultIssuePriority">
+                  <option value="">No change</option>
+                  <option value="__clear">Clear</option>
+                  <option value="0">Low</option>
+                  <option value="1">Medium</option>
+                  <option value="2">High</option>
+                  <option value="3">Critical</option>
+                </select>
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Audit Score</legend>
+              <label>
+                <span>On Yes</span>
+                <input name="auditScoreOnYes" inputmode="decimal">
+              </label>
+              <label>
+                <span>On No</span>
+                <input name="auditScoreOnNo" inputmode="decimal">
+              </label>
+              <label>
+                <span>On N/A</span>
+                <input name="auditScoreOnNa" inputmode="decimal">
+              </label>
+            </fieldset>
+
+            <fieldset>
+              <legend>Signature</legend>
+              <label>
+                <span>On Yes</span>
+                <select name="signatureOnYes">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label>
+                <span>On No</span>
+                <select name="signatureOnNo">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+              <label>
+                <span>On N/A</span>
+                <select name="signatureOnNa">
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+            </fieldset>
+          </div>
+          <div class="table-wrap checklist-bulk-results-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Checklist</th>
+                  <th>Status</th>
+                  <th>Y/N</th>
+                  <th>Y/N/NA</th>
+                  <th>Skipped</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody id="checklistBulkResults"></tbody>
+            </table>
+          </div>
+        </form>
+
+        <div class="status-line" id="checklistsStatus">Ready</div>
+
+      </section>
+
+      <section class="view" id="observationImportView" aria-labelledby="observationImportTitle">
+        <div class="section-heading">
+          <h2 id="observationImportTitle">Observations Spreadsheet Import</h2>
+          <div class="actions">
+            <a class="secondary-button button-link" href="/api/templates/observations.csv" download>Download Template</a>
+            <button class="ghost-button reset-settings-button" type="button" data-target="#observationImportSettingsForm">Reset Settings</button>
+            <button class="secondary-button" id="planObservationsButton" type="button">Preview Spreadsheet</button>
+            <button class="danger-button" id="applyObservationsButton" type="button" disabled>Create Observation Types</button>
+          </div>
+        </div>
+
+        <div class="import-grid checklist-import-grid">
+          <label class="file-input">
+            <span>Spreadsheet</span>
+            <input id="observationFile" type="file" accept=".csv,.xlsx,.xlsm">
+          </label>
+          <label>
+            <span>Sheet</span>
+            <input id="observationSheetName" placeholder="Observations">
+          </label>
+          <label class="check-label">
+            <input id="observationContinueOnError" type="checkbox">
+            <span>Continue on error</span>
+          </label>
+        </div>
+
+        <form class="observation-import-settings" id="observationImportSettingsForm">
+          <div class="section-heading compact-heading">
+            <h3>Global Observation Type Settings</h3>
+          </div>
+          <div id="observationImportGlobalSettings"></div>
+        </form>
+
+        <div class="status-line" id="observationImportStatus">Ready</div>
+        <div class="observation-import-list" id="observationImportList"></div>
+        <div class="table-wrap checklist-results-wrap" id="observationImportResultsWrap" hidden>
+          <table>
+            <thead>
+              <tr>
+                <th>Row</th>
+                <th>Observation Type</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="observationImportResults"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="observationsView" aria-labelledby="observationsTitle">
+        <div class="section-heading">
+          <h2 id="observationsTitle">Manage Observation Types</h2>
+        </div>
+
+        <form class="observation-updater" id="observationBulkForm">
+          <div class="section-heading compact-heading">
+            <h3>Observation Type Updater</h3>
+            <div class="actions">
+              <button class="secondary-button" id="loadObservationsButton" type="button">Refresh</button>
+              <button class="ghost-button reset-settings-button" type="button" data-target="#observationBulkForm">Reset Settings</button>
+              <button class="secondary-button" id="previewObservationBulkButton" type="button">Preview</button>
+              <button class="danger-button" id="applyObservationBulkButton" type="button" disabled>Update Observation Types</button>
+            </div>
+          </div>
+          <div class="updater-grid">
+            <div class="checklist-picker-panel">
+              <div class="subsection-heading">
+                <h4>Observation Types</h4>
+                <button class="secondary-button" id="loadObservationDetailsButton" type="button">Load Selected</button>
+              </div>
+              <select id="bulkObservationSelect" multiple size="8" required>
+                <option value="" disabled>Load observation types first</option>
+              </select>
+              <div class="summary-strip" id="observationBulkSummary">No observation type selected</div>
+            </div>
+          </div>
+
+          <div id="observationBulkSettings"></div>
+
+          <div class="table-wrap checklist-bulk-results-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Observation Type</th>
+                  <th>Status</th>
+                  <th>Applied Fields</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody id="observationBulkResults"></tbody>
+            </table>
+          </div>
+        </form>
+
+        <div class="status-line" id="observationsStatus">Ready</div>
+        <div class="table-wrap checklist-list-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Observation Type</th>
+                <th>Status</th>
+                <th>Category</th>
+                <th>Custom Fields</th>
+                <th>ID</th>
+              </tr>
+            </thead>
+            <tbody id="observationsTable"></tbody>
+          </table>
+        </div>
+      </section>
     </main>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="/app.js" type="module"></script>

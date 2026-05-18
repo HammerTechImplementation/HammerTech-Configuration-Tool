@@ -100,6 +100,94 @@ export const ENTITY_CONFIGS = {
       taxId: "abn",
       internalId: "internalIdentifier"
     }
+  },
+  "equipment-profiles": {
+    singular: "equipment profile",
+    displayName: "Equipment Profiles",
+    templateFile: "equipment-profiles-template.csv",
+    idField: "id",
+    createFields: [
+      "owner",
+      "make",
+      "model",
+      "registrationNumber",
+      "serialNumber",
+      "lastServiced",
+      "nextService",
+      "damageComments",
+      "dateUpdated",
+      "lastServiceHours",
+      "currentHours",
+      "nextServiceHours",
+      "equipmentTypeId",
+      "employerProfileId",
+      "serviceByMethod",
+      "isEquipmentShared",
+      "canImport",
+      "customFieldFormId",
+      "customFieldValues"
+    ],
+    patchFields: [
+      "owner",
+      "make",
+      "model",
+      "registrationNumber",
+      "serialNumber",
+      "lastServiced",
+      "nextService",
+      "damageComments",
+      "dateUpdated",
+      "lastServiceHours",
+      "currentHours",
+      "nextServiceHours",
+      "equipmentTypeId",
+      "employerProfileId",
+      "serviceByMethod",
+      "isEquipmentShared",
+      "canImport",
+      "customFieldValues"
+    ],
+    requiredCreateFields: ["equipmentTypeId"],
+    booleanFields: [
+      "isEquipmentShared",
+      "canImport"
+    ],
+    numberFields: [
+      "lastServiceHours",
+      "currentHours",
+      "nextServiceHours"
+    ],
+    jsonFields: [
+      "customFieldValues"
+    ],
+    enumFields: {
+      serviceByMethod: ["Date", "Hours"]
+    },
+    aliases: {
+      id: "id",
+      hireCompany: "owner",
+      equipmentOwner: "owner",
+      ownerName: "owner",
+      rego: "registrationNumber",
+      registration: "registrationNumber",
+      registrationNo: "registrationNumber",
+      registrationNumber: "registrationNumber",
+      serial: "serialNumber",
+      serialNo: "serialNumber",
+      serialNumber: "serialNumber",
+      equipmentType: "equipmentTypeId",
+      equipmentTypeID: "equipmentTypeId",
+      equipmentTypeId: "equipmentTypeId",
+      employer: "employerProfileId",
+      employerProfile: "employerProfileId",
+      employerProfileID: "employerProfileId",
+      employerProfileId: "employerProfileId",
+      serviceBy: "serviceByMethod",
+      serviceMethod: "serviceByMethod",
+      shared: "isEquipmentShared",
+      isShared: "isEquipmentShared",
+      importable: "canImport"
+    }
   }
 };
 
@@ -119,7 +207,7 @@ export function rowToEntityCreateOperation(entity, row, { rowNumber = 0 } = {}) 
     entity,
     action: "create",
     id: normalized[config.idField] ? String(normalized[config.idField]) : "",
-    name: normalized.name || normalized.businessName || "",
+    name: entityDisplayName(entity, normalized),
     payload: {},
     warnings: normalized.__warnings,
     errors: []
@@ -171,9 +259,7 @@ export async function executeEntityCreateOperations(client, operations, {
     }
 
     try {
-      const response = operation.entity === "projects"
-        ? await client.createProject(operation.payload)
-        : await client.createEmployerProfile(operation.payload);
+      const response = await createEntity(client, operation.entity, operation.payload);
       results.push({ operation, status: "success", response });
     } catch (error) {
       results.push({
@@ -207,6 +293,10 @@ export async function listAllProjects(client, query = {}) {
 
 export async function listAllEmployerProfiles(client, query = {}) {
   return listAll((params) => client.listEmployerProfiles(params), query);
+}
+
+export async function listAllEquipmentProfiles(client, query = {}) {
+  return listAll((params) => client.listEquipmentProfiles(params), query);
 }
 
 async function listAll(fetchPage, query = {}) {
@@ -268,9 +358,29 @@ function aliasField(header, config) {
 
 function coerceField(field, value, config) {
   if (value === "__null__") return null;
+  if ((config.jsonFields || []).includes(field)) return coerceJson(value);
   if (config.booleanFields.includes(field)) return coerceBoolean(value);
   if (config.numberFields.includes(field)) return coerceNumber(value);
+  if (config.enumFields?.[field]) return coerceEnum(value, config.enumFields[field]);
   return String(value);
+}
+
+function createEntity(client, entity, payload) {
+  if (entity === "projects") return client.createProject(payload);
+  if (entity === "employer-profiles") return client.createEmployerProfile(payload);
+  if (entity === "equipment-profiles") return client.createEquipmentProfile(payload);
+  throw new Error(`Unsupported entity "${entity}".`);
+}
+
+function entityDisplayName(entity, normalized) {
+  if (entity === "equipment-profiles") {
+    return [
+      normalized.make,
+      normalized.model,
+      normalized.registrationNumber || normalized.serialNumber
+    ].filter(Boolean).join(" ") || normalized.owner || normalized.equipmentTypeId || "";
+  }
+  return normalized.name || normalized.businessName || "";
 }
 
 function coerceBoolean(value) {
@@ -287,6 +397,24 @@ function coerceNumber(value) {
     throw new Error(`Expected number value, received "${value}".`);
   }
   return number;
+}
+
+function coerceJson(value) {
+  if (Array.isArray(value) || (value && typeof value === "object")) return value;
+  const text = String(value || "").trim();
+  if (!text) return [];
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("Expected JSON.");
+  }
+}
+
+function coerceEnum(value, allowed) {
+  const text = String(value || "").trim();
+  const match = allowed.find((item) => item.toLowerCase() === text.toLowerCase());
+  if (!match) throw new Error(`Expected one of ${allowed.join(", ")}, received "${value}".`);
+  return match;
 }
 
 function normalizeCell(value) {
