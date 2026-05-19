@@ -455,12 +455,24 @@ function invalidatePreview(key, statusSelector, message = PREVIEW_REQUIRED_TEXT)
 function invalidatePreviewForControl(target) {
   if (!target || target.closest(".search-field") || target.closest("#authForm, #browserCookieForm")) return;
 
-  if (target.closest("#userImportView")) invalidatePreview("userImport", "#userImportStatus");
-  if (target.closest("#jobTitleImportView")) invalidatePreview("jobTitleImport", "#jobTitleImportStatus");
-  if (target.closest("#licenseTypeImportView")) invalidatePreview("licenseTypeImport", "#licenseTypeImportStatus");
-  if (target.closest("#importView")) invalidatePreview("genericImport", "#importStatus");
-  if (target.closest("#checklistImportView")) invalidatePreview("checklistImport", "#checklistImportStatus");
-  if (target.closest("#observationImportView")) invalidatePreview("observationImport", "#observationImportStatus");
+  if (target.matches("#userImportFile, #userImportSheetName, #userImportContinueOnError")) {
+    invalidatePreview("userImport", "#userImportStatus");
+  }
+  if (target.matches("#jobTitleImportFile, #jobTitleImportSheetName, #jobTitleSkipExisting, #jobTitleContinueOnError")) {
+    invalidatePreview("jobTitleImport", "#jobTitleImportStatus");
+  }
+  if (target.matches("#licenseTypeImportFile, #licenseTypeImportSheetName, #licenseTypeSkipExisting, #licenseTypeContinueOnError")) {
+    invalidatePreview("licenseTypeImport", "#licenseTypeImportStatus");
+  }
+  if (target.matches("#importEntity, #importFile, #sheetName, #continueOnError")) {
+    invalidatePreview("genericImport", "#importStatus");
+  }
+  if (target.matches("#checklistFile, #checklistSheetName, #checklistContinueOnError")) {
+    invalidatePreview("checklistImport", "#checklistImportStatus");
+  }
+  if (target.matches("#observationFile, #observationSheetName, #observationContinueOnError")) {
+    invalidatePreview("observationImport", "#observationImportStatus");
+  }
 
   if (target.closest("#jobTitlesView")) invalidatePreview("jobTitleBulkDelete", "#jobTitlesStatus");
 
@@ -494,6 +506,13 @@ function invalidatePreviewForControl(target) {
 }
 
 function invalidatePreviewForSettingsTarget(selector) {
+  if ([
+    "#userImportSettingsForm",
+    "#checklistImportSettingsForm",
+    "#observationImportSettingsForm"
+  ].includes(selector)) {
+    return;
+  }
   const target = selector ? document.querySelector(selector) : null;
   if (!target) return;
   invalidatePreviewForControl(target);
