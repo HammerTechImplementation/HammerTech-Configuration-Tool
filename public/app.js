@@ -20,9 +20,14 @@ const state = {
   checklistImportOperations: [],
   observationImportOperations: [],
   userImportOperations: [],
+  workerImportOperations: [],
   userImportProjects: [],
   userImportRegions: [],
+  workerImportProjects: [],
+  workerImportJobTitles: [],
+  workerImportEmployers: [],
   userImportLookupsLoaded: false,
+  workerImportLookupsLoaded: false,
   observationLookupsLoaded: false,
   selectedIds: new Set(),
   selectedRegionIds: new Set(),
@@ -32,6 +37,7 @@ const state = {
   selectedEmployerIds: new Set(),
   selectedEquipmentIds: new Set(),
   selectedEquipmentInductionIds: new Set(),
+  selectedWorkerImportClientIds: new Set(),
   previewReady: new Set()
 };
 
@@ -41,6 +47,7 @@ const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 const PREVIEW_ACTION_BUTTONS = {
   genericImport: "#applyButton",
   userImport: "#applyUsersButton",
+  workerImport: "#applyWorkersButton",
   regionImport: "#applyRegionsButton",
   regionBulkUpdate: "#bulkRegionUpdateButton",
   regionBulkDelete: "#bulkRegionDeleteButton",
@@ -156,6 +163,7 @@ async function init() {
   bindUiPolish();
   bindAuth();
   bindUserImport();
+  bindWorkerImport();
   bindRegions();
   bindJobTitles();
   bindLicenseTypes();
@@ -184,6 +192,7 @@ function bindTabs() {
     button.addEventListener("click", () => {
       activateTab(button);
       if (button.dataset.importEntity) setImportEntity(button.dataset.importEntity);
+      if (button.dataset.view === "workerImportView") loadWorkerImportLookups({ quiet: true });
       if (button.dataset.view === "regionImportView") loadRegions({ quiet: true, statusSelector: "#regionImportStatus" });
       if (button.dataset.view === "checklistImportView") loadInspectionObservationTypes();
       if (button.dataset.view === "observationImportView") loadObservationLookups({ quiet: true });
@@ -470,6 +479,9 @@ function invalidatePreviewForControl(target) {
   if (target.matches("#userImportFile, #userImportSheetName, #userImportContinueOnError")) {
     invalidatePreview("userImport", "#userImportStatus");
   }
+  if (target.matches("#workerImportFile, #workerImportSheetName") || target.closest("#workerFieldForm")) {
+    invalidatePreview("workerImport", "#workerImportStatus");
+  }
   if (target.matches("#regionImportFile, #regionImportSheetName, #regionSkipExisting, #regionImportContinueOnError")) {
     invalidatePreview("regionImport", "#regionImportStatus");
   }
@@ -528,6 +540,7 @@ function invalidatePreviewForControl(target) {
 function invalidatePreviewForSettingsTarget(selector) {
   if ([
     "#userImportSettingsForm",
+    "#workerImportSettingsForm",
     "#regionImportSettingsForm",
     "#checklistImportSettingsForm",
     "#observationImportSettingsForm"
@@ -635,6 +648,22 @@ function bindUserImport() {
   $("#loadUserImportLookupsButton").addEventListener("click", loadUserImportLookups);
   $("#planUsersButton").addEventListener("click", () => runUserImport(false));
   $("#applyUsersButton").addEventListener("click", () => runUserImport(true));
+}
+
+function bindWorkerImport() {
+  $("#downloadWorkerTemplateButton").addEventListener("click", downloadWorkerTemplate);
+  $("#loadWorkerImportLookupsButton").addEventListener("click", () => loadWorkerImportLookups());
+  $("#workerProjectSelect").addEventListener("change", () => loadWorkerImportEmployers());
+  $("#workerDifferentEmployers").addEventListener("change", () => {
+    renderWorkerImportPlan({ results: [] });
+  });
+  $("#planWorkersButton").addEventListener("click", () => runWorkerImport(false));
+  $("#applyWorkersButton").addEventListener("click", () => runWorkerImport(true));
+  $("#selectAllWorkerImportRowsButton").addEventListener("click", () => setAllWorkerImportRowSelection(true));
+  $("#clearWorkerImportRowsButton").addEventListener("click", () => setAllWorkerImportRowSelection(false));
+  $("#applyWorkerBulkEmployerButton").addEventListener("click", applyWorkerBulkEmployer);
+  renderWorkerProjectOptions();
+  renderWorkerEmployerOptions();
 }
 
 function bindRegions() {
@@ -1135,6 +1164,350 @@ function regionOptionsHtml(blankLabel = "") {
     `<option value="${escapeHtml(region.id)}">${escapeHtml(region.name)}</option>`
   )));
   return options.join("");
+}
+
+function selectedWorkerImportFields() {
+  const fields = $$("#workerFieldForm input[name='workerFields']:checked").map((input) => input.value);
+  for (const required of ["firstName", "lastName", "dateOfBirth"]) {
+    if (!fields.includes(required)) fields.unshift(required);
+  }
+  return Array.from(new Set(fields));
+}
+
+function downloadWorkerTemplate() {
+  const params = new URLSearchParams();
+  for (const field of selectedWorkerImportFields()) params.append("field", field);
+  window.location.href = `/api/worker-profiles/template?${params}`;
+}
+
+async function runWorkerImport(apply) {
+  if (apply) {
+    if (!requirePreviewReady("workerImport", "Preview a worker spreadsheet first")) return;
+    await applyWorkerImport();
+    return;
+  }
+
+  const file = $("#workerImportFile").files[0];
+  if (!file) return toast("Choose a worker spreadsheet");
+  if (!$("#workerProjectSelect").value) return toast("Select one assigning project");
+  if (!$("#workerDefaultEmployerSelect").value && !$("#workerDifferentEmployers").checked) {
+    return toast("Select a default employer or enable different employers");
+  }
+
+  const status = $("#workerImportStatus");
+  status.classList.remove("error");
+  status.textContent = "Reading spreadsheet...";
+  setPreviewReady("workerImport", false);
+
+  await runWithToast(async () => {
+    if (!state.workerImportLookupsLoaded) await loadWorkerImportLookups({ quiet: true });
+    if ($("#workerProjectSelect").value && !state.workerImportEmployers.length) {
+      await loadWorkerImportEmployers({ quiet: true });
+    }
+
+    const settings = collectWorkerImportSettings();
+    const params = new URLSearchParams({
+      continueOnError: String($("#workerImportContinueOnError").checked),
+      preferredCommunicationLanguage: settings.preferredCommunicationLanguage,
+      projectId: settings.projectId,
+      defaultEmployerId: settings.defaultEmployerId,
+      sendTest: settings.sendTest
+    });
+    for (const field of selectedWorkerImportFields()) params.append("field", field);
+    if ($("#workerImportSheetName").value.trim()) params.set("sheet", $("#workerImportSheetName").value.trim());
+
+    const result = await api(`/api/worker-profiles/import/plan?${params}`, {
+      method: "POST",
+      rawBody: await file.arrayBuffer(),
+      headers: {
+        "content-type": "application/octet-stream",
+        "x-file-name": file.name
+      }
+    });
+    state.workerImportOperations = result.operations || (result.results || []).map((item) => item.operation).filter(Boolean);
+    state.selectedWorkerImportClientIds = new Set(state.workerImportOperations.map((operation) => operation.clientId));
+    renderWorkerImportPlan(result);
+    setPreviewReady("workerImport", state.workerImportOperations.length > 0);
+    return "Worker spreadsheet preview ready";
+  }, (message) => showEntityError("#workerImportStatus", message));
+}
+
+async function applyWorkerImport() {
+  if (!requirePreviewReady("workerImport", "Preview a worker spreadsheet first")) return;
+  if (!state.workerImportOperations.length) {
+    toast("Preview a worker spreadsheet first");
+    setPreviewReady("workerImport", false);
+    return;
+  }
+
+  const status = $("#workerImportStatus");
+  status.classList.remove("error");
+  status.textContent = "Creating worker profiles and project workers...";
+
+  await runWithToast(async () => {
+    const result = await api("/api/worker-profiles/import/apply", {
+      method: "POST",
+      body: {
+        operations: state.workerImportOperations,
+        globalSettings: collectWorkerImportSettings(),
+        workerSettings: collectWorkerImportOverrides(),
+        continueOnError: $("#workerImportContinueOnError").checked
+      }
+    });
+    renderWorkerImportResults(result);
+    state.workerImportOperations = [];
+    state.selectedWorkerImportClientIds.clear();
+    setPreviewReady("workerImport", false);
+    $("#workerImportPlanWrap").hidden = true;
+    $("#workerEmployerBulkControls").hidden = true;
+    return "Worker import complete";
+  }, (message) => showEntityError("#workerImportStatus", message));
+}
+
+async function loadWorkerImportLookups({ quiet = false } = {}) {
+  const status = $("#workerImportStatus");
+  if (!quiet) {
+    status.classList.remove("error");
+    status.textContent = "Loading projects and job titles...";
+  }
+
+  const load = async () => {
+    const currentProject = $("#workerProjectSelect").value;
+    const result = await api("/api/worker-import/lookups");
+    state.workerImportProjects = result.projects || [];
+    state.workerImportJobTitles = result.jobTitles || [];
+    state.workerImportLookupsLoaded = true;
+    renderWorkerProjectOptions(currentProject);
+    if ($("#workerProjectSelect").value) await loadWorkerImportEmployers({ quiet: true });
+    if (!quiet) status.textContent = `${state.workerImportProjects.length} projects and ${state.workerImportJobTitles.length} job titles loaded`;
+    return "Worker lists refreshed";
+  };
+
+  if (quiet) {
+    try {
+      await load();
+    } catch {
+      // Lookup loading is best-effort on tab activation; explicit refresh will show errors.
+    }
+    return;
+  }
+
+  await runWithToast(load, (message) => showEntityError("#workerImportStatus", message));
+}
+
+async function loadWorkerImportEmployers({ quiet = false } = {}) {
+  const projectId = $("#workerProjectSelect").value;
+  const status = $("#workerImportStatus");
+  if (!projectId) {
+    state.workerImportEmployers = [];
+    renderWorkerEmployerOptions();
+    renderWorkerImportPlan({ results: [] });
+    return;
+  }
+
+  const load = async () => {
+    if (!quiet) {
+      status.classList.remove("error");
+      status.textContent = "Loading project employers...";
+    }
+    const result = await api(`/api/worker-import/employers?projectId=${encodeURIComponent(projectId)}`);
+    state.workerImportEmployers = result.employers || [];
+    renderWorkerEmployerOptions();
+    if (state.workerImportOperations.length) renderWorkerImportPlan({ results: [] });
+    if (!quiet) status.textContent = `${state.workerImportEmployers.length} employers loaded for selected project`;
+    return "Project employers refreshed";
+  };
+
+  if (quiet) {
+    try {
+      await load();
+    } catch (error) {
+      showEntityError("#workerImportStatus", error.message || "Failed to load project employers");
+    }
+    return;
+  }
+
+  await runWithToast(load, (message) => showEntityError("#workerImportStatus", message));
+}
+
+function collectWorkerImportSettings() {
+  const form = new FormData($("#workerImportSettingsForm"));
+  return {
+    preferredCommunicationLanguage: String(form.get("preferredCommunicationLanguage") || "en-US").trim() || "en-US",
+    projectId: String(form.get("projectId") || "").trim(),
+    defaultEmployerId: String(form.get("defaultEmployerId") || "").trim(),
+    sendTest: String(form.get("sendTest") || "false").trim()
+  };
+}
+
+function collectWorkerImportOverrides() {
+  if (!$("#workerDifferentEmployers").checked) return {};
+  const overrides = {};
+  $$(".worker-import-employer-select").forEach((select) => {
+    const clientId = select.dataset.clientId;
+    if (clientId && select.value) overrides[clientId] = { employerId: select.value };
+  });
+  return overrides;
+}
+
+function renderWorkerProjectOptions(selectedValue = "") {
+  const select = $("#workerProjectSelect");
+  if (!select) return;
+  const current = selectedValue || select.value;
+  select.innerHTML = `<option value="">Select one project</option>${state.workerImportProjects.map((project) => {
+    const suffix = project.regionName ? ` (${project.regionName})` : "";
+    return `<option value="${escapeHtml(project.id)}">${escapeHtml(`${project.name}${suffix}`)}</option>`;
+  }).join("")}`;
+  if (current && state.workerImportProjects.some((project) => project.id === current)) select.value = current;
+}
+
+function renderWorkerEmployerOptions() {
+  const defaultSelect = $("#workerDefaultEmployerSelect");
+  const bulkSelect = $("#workerBulkEmployerSelect");
+  const defaultCurrent = defaultSelect?.value || "";
+  const bulkCurrent = bulkSelect?.value || "";
+  const options = workerEmployerOptionsHtml("", { blankLabel: state.workerImportEmployers.length ? "Select employer" : "Select project first" });
+
+  if (defaultSelect) {
+    defaultSelect.innerHTML = options;
+    if (defaultCurrent && state.workerImportEmployers.some((employer) => employer.id === defaultCurrent)) {
+      defaultSelect.value = defaultCurrent;
+    }
+  }
+
+  if (bulkSelect) {
+    bulkSelect.innerHTML = options;
+    if (bulkCurrent && state.workerImportEmployers.some((employer) => employer.id === bulkCurrent)) {
+      bulkSelect.value = bulkCurrent;
+    }
+  }
+}
+
+function workerEmployerOptionsHtml(selected = "", { blankLabel = "Select employer" } = {}) {
+  const options = [`<option value="">${escapeHtml(blankLabel)}</option>`];
+  options.push(...state.workerImportEmployers.map((employer) => {
+    const suffix = employer.internalIdentifier ? ` (${employer.internalIdentifier})` : "";
+    const label = `${employer.name || employer.id}${suffix}`;
+    return `<option value="${escapeHtml(employer.id)}" ${employer.id === selected ? "selected" : ""}>${escapeHtml(label)}</option>`;
+  }));
+  return options.join("");
+}
+
+function renderWorkerImportPlan(result = {}) {
+  const tbody = $("#workerImportPlanTable");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  $("#workerImportResults").innerHTML = "";
+  $("#workerImportResultsWrap").hidden = true;
+  $("#workerImportPlanWrap").hidden = !state.workerImportOperations.length;
+
+  const useOverrides = $("#workerDifferentEmployers").checked;
+  $("#workerEmployerBulkControls").hidden = !useOverrides || !state.workerImportOperations.length;
+
+  for (const operation of state.workerImportOperations) {
+    const payload = operation.payload || {};
+    const assignment = operation.assignmentPayload || {};
+    const errors = operation.errors || [];
+    const warnings = operation.warnings || [];
+    const employerId = assignment.employerId || $("#workerDefaultEmployerSelect").value || "";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="select-col">
+        ${useOverrides ? `<input class="worker-import-row-select" type="checkbox" value="${escapeHtml(operation.clientId || "")}" ${state.selectedWorkerImportClientIds.has(operation.clientId) ? "checked" : ""}>` : ""}
+      </td>
+      <td>${escapeHtml(operation.rowNumber || "")}</td>
+      <td>${escapeHtml(operation.name || [payload.firstName, payload.lastName].filter(Boolean).join(" ") || "Unnamed worker")}</td>
+      <td>${escapeHtml(workerJobTitleText(operation))}</td>
+      <td>${useOverrides
+        ? `<select class="worker-import-employer-select" data-client-id="${escapeHtml(operation.clientId || "")}">${workerEmployerOptionsHtml(employerId)}</select>`
+        : escapeHtml(workerEmployerName(employerId) || "Use default employer")}
+      </td>
+      <td><span class="status-badge status-${errors.length ? "invalid" : "planned"}">${errors.length ? "invalid" : "planned"}</span></td>
+      <td>${escapeHtml([...errors, ...warnings].join("; "))}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  $$(".worker-import-row-select").forEach((input) => {
+    input.addEventListener("change", (event) => {
+      if (event.target.checked) state.selectedWorkerImportClientIds.add(event.target.value);
+      else state.selectedWorkerImportClientIds.delete(event.target.value);
+      updateWorkerImportSelectionCount();
+    });
+  });
+  updateWorkerImportSelectionCount();
+
+  const failed = (result.results || []).filter((item) => item.status === "invalid" || item.status === "failed").length;
+  if (state.workerImportOperations.length) {
+    $("#workerImportStatus").classList.toggle("error", failed > 0);
+    $("#workerImportStatus").textContent = `${state.workerImportOperations.length} workers found, ${failed} invalid`;
+  }
+}
+
+function renderWorkerImportResults(result) {
+  const tbody = $("#workerImportResults");
+  tbody.innerHTML = "";
+  $("#workerImportResultsWrap").hidden = false;
+  $("#workerImportPlanWrap").hidden = true;
+  $("#workerEmployerBulkControls").hidden = true;
+
+  for (const item of result.results || []) {
+    const op = item.operation || {};
+    const payload = op.payload || {};
+    const assignment = op.assignmentPayload || {};
+    const message = item.error || item.errors?.join("; ") || item.workerResponse?.messageText || item.profileResponse?.messageText || op.warnings?.join("; ") || "";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(op.rowNumber || "")}</td>
+      <td>${escapeHtml(op.name || [payload.firstName, payload.lastName].filter(Boolean).join(" ") || "")}</td>
+      <td>${escapeHtml(workerEmployerName(assignment.employerId) || assignment.employerId || "")}</td>
+      <td><span class="status-badge status-${escapeHtml(item.status || "planned")}">${escapeHtml(item.status || "")}</span></td>
+      <td>${escapeHtml(message)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  const failed = (result.results || []).filter((item) => item.status === "invalid" || item.status === "failed").length;
+  $("#workerImportStatus").classList.toggle("error", failed > 0);
+  $("#workerImportStatus").textContent = `${result.results?.length || 0} workers processed, ${failed} failed`;
+}
+
+function setAllWorkerImportRowSelection(selected) {
+  state.selectedWorkerImportClientIds = new Set(selected
+    ? state.workerImportOperations.map((operation) => operation.clientId).filter(Boolean)
+    : []);
+  $$(".worker-import-row-select").forEach((input) => {
+    input.checked = selected;
+  });
+  updateWorkerImportSelectionCount();
+}
+
+function applyWorkerBulkEmployer() {
+  const employerId = $("#workerBulkEmployerSelect").value;
+  if (!employerId) return toast("Choose an employer to apply");
+  const ids = state.selectedWorkerImportClientIds;
+  if (!ids.size) return toast("Select workers first");
+  $$(".worker-import-employer-select").forEach((select) => {
+    if (ids.has(select.dataset.clientId)) select.value = employerId;
+  });
+  toast(`Employer applied to ${ids.size} worker${ids.size === 1 ? "" : "s"}`);
+}
+
+function updateWorkerImportSelectionCount() {
+  const count = state.selectedWorkerImportClientIds.size;
+  const element = $("#workerImportSelectionCount");
+  if (element) element.textContent = `${count} selected`;
+}
+
+function workerJobTitleText(operation) {
+  const match = operation.jobTitleMatch || {};
+  if (match.status === "matched") return `Matched: ${match.name || match.id}`;
+  if (match.status === "custom") return `Custom: ${match.name || ""}`;
+  return "Not provided";
+}
+
+function workerEmployerName(id) {
+  return state.workerImportEmployers.find((employer) => employer.id === id)?.name || "";
 }
 
 async function runRegionImport(apply) {

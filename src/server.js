@@ -71,6 +71,13 @@ import {
   planSimpleUserCreateOperations,
   planUserOperations
 } from "./users.js";
+import {
+  executeWorkerProfileImportOperations,
+  listAllEmployers,
+  listAllReferenceJobTitles,
+  planWorkerProfileImportOperations,
+  workerProfileTemplateCsv
+} from "./workers.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const projectRoot = resolve(__dirname, "..");
@@ -113,6 +120,18 @@ async function routeApi(request, response, url, context) {
     response.writeHead(200, {
       "content-type": "text/csv; charset=utf-8",
       "content-disposition": `attachment; filename="hammertech-${templateEntity}-template.csv"`,
+      "cache-control": "no-store"
+    });
+    response.end(content);
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/worker-profiles/template") {
+    const fields = selectedWorkerFieldsFromUrl(url);
+    const content = workerProfileTemplateCsv(fields.length ? fields : undefined);
+    response.writeHead(200, {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="hammertech-worker-profiles-template.csv"`,
       "cache-control": "no-store"
     });
     response.end(content);
@@ -167,6 +186,25 @@ async function routeApi(request, response, url, context) {
     const client = await authenticatedClient(context.sessionPath);
     const projects = await listAllProjects(client, { includeArchived: false });
     return sendJson(response, 200, buildUserImportLookups(projects));
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/worker-import/lookups") {
+    const client = await authenticatedClient(context.sessionPath);
+    const [projects, jobTitles] = await Promise.all([
+      listAllProjects(client, { includeArchived: false }),
+      listAllReferenceJobTitles(client)
+    ]);
+    return sendJson(response, 200, {
+      ...buildUserImportLookups(projects),
+      jobTitles
+    });
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/worker-import/employers") {
+    const client = await authenticatedClient(context.sessionPath);
+    const projectId = required(url.searchParams.get("projectId"), "projectId");
+    const employers = await listAllEmployers(client, { projectId });
+    return sendJson(response, 200, { employers });
   }
 
   if (request.method === "GET" && url.pathname === "/api/employer-profiles") {
@@ -427,6 +465,56 @@ async function routeApi(request, response, url, context) {
       matchByEmail: false,
       continueOnError: url.searchParams.get("continueOnError") === "true"
     }) : plan.operations.map((operation) => ({
+      operation,
+      status: operation.errors?.length ? "invalid" : "planned",
+      ...(operation.errors?.length ? { errors: operation.errors } : {})
+    }));
+    return sendJson(response, 200, {
+      rowCount: rows.length,
+      hasErrors: results.some((result) => result.status === "invalid" || result.status === "failed"),
+      operations: results.map((result) => result.operation),
+      results
+    });
+  }
+
+  if (request.method === "POST" && (
+    url.pathname === "/api/worker-profiles/import/plan" ||
+    url.pathname === "/api/worker-profiles/import/apply"
+  )) {
+    const apply = url.pathname.endsWith("/apply");
+    const contentType = String(request.headers["content-type"] || "").toLowerCase();
+
+    if (apply && contentType.includes("application/json")) {
+      const body = await readJsonBody(request);
+      const client = await authenticatedClient(context.sessionPath);
+      const results = await executeWorkerProfileImportOperations(client, body.operations || [], {
+        apply: true,
+        globalSettings: body.globalSettings || {},
+        workerSettings: body.workerSettings || {},
+        continueOnError: body.continueOnError !== false
+      });
+      return sendJson(response, 200, {
+        rowCount: body.operations?.length || 0,
+        hasErrors: results.some((result) => result.status === "invalid" || result.status === "failed"),
+        results
+      });
+    }
+
+    const client = await authenticatedClient(context.sessionPath);
+    const fileName = request.headers["x-file-name"] || "worker-profiles.csv";
+    const buffer = await readBody(request);
+    const rows = await readSpreadsheetRowsFromBuffer(String(fileName), buffer, {
+      sheet: url.searchParams.get("sheet") || undefined
+    });
+    const jobTitles = await listAllReferenceJobTitles(client);
+    const plan = planWorkerProfileImportOperations(rows, {
+      selectedFields: selectedWorkerFieldsFromUrl(url),
+      jobTitles,
+      globalSettings: {
+        preferredCommunicationLanguage: url.searchParams.get("preferredCommunicationLanguage") || "en-US"
+      }
+    });
+    const results = plan.operations.map((operation) => ({
       operation,
       status: operation.errors?.length ? "invalid" : "planned",
       ...(operation.errors?.length ? { errors: operation.errors } : {})
@@ -1104,6 +1192,12 @@ function templateFileFor(entity) {
   if (entity === "license-types") return "license-types-template.csv";
   if (entity === "regions") return "regions-template.csv";
   return getEntityConfig(entity).templateFile;
+}
+
+function selectedWorkerFieldsFromUrl(url) {
+  const repeated = url.searchParams.getAll("fields").flatMap((value) => String(value || "").split(","));
+  const singular = url.searchParams.getAll("field");
+  return [...repeated, ...singular].map((value) => String(value || "").trim()).filter(Boolean);
 }
 
 async function executeBulk(ids, continueOnError, action) {

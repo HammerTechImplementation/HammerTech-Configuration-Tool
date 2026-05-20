@@ -301,6 +301,22 @@ export class HammerTechClient {
     return this.request("GET", "/api/v1/EquipmentInductions", { query });
   }
 
+  listReferenceJobTitles(query = {}) {
+    return this.request("GET", "/api/v1/JobTitles", { query });
+  }
+
+  listEmployers(query = {}) {
+    return this.request("GET", "/api/v1/Employers", { query });
+  }
+
+  createWorkerProfile(payload) {
+    return this.request("POST", "/api/v1/WorkerProfiles", { body: payload });
+  }
+
+  createWorker(payload) {
+    return this.request("POST", "/api/v1/Workers", { body: payload });
+  }
+
   getEquipmentInduction(id) {
     return this.request("GET", `/api/v1/EquipmentInductions/${encodeURIComponent(id)}`);
   }

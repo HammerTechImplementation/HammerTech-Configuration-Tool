@@ -73,6 +73,28 @@
             </div>
           </div>
           <div class="nav-group">
+            <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="workersMenu">
+              <span class="nav-group-label">
+                <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4z"/>
+                  <path d="M4 21a8 8 0 0 1 16 0"/>
+                  <path d="M19 8h3"/>
+                  <path d="M20.5 6.5v3"/>
+                </svg>
+                <span>Workers</span>
+              </span>
+              <span class="nav-group-meta">
+                <span class="tab-note">API</span>
+                <svg class="nav-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </span>
+            </button>
+            <div class="nav-submenu" id="workersMenu">
+              <button class="tab" type="button" data-view="workerImportView">Spreadsheet Import</button>
+            </div>
+          </div>
+          <div class="nav-group">
             <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="regionsMenu">
               <span class="nav-group-label">
                 <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
@@ -308,6 +330,150 @@
               </tr>
             </thead>
             <tbody id="userImportResults"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="workerImportView" aria-labelledby="workerImportTitle">
+        <div class="section-heading">
+          <h2 id="workerImportTitle">Worker Profiles Spreadsheet Import</h2>
+          <div class="actions">
+            <button class="secondary-button" id="downloadWorkerTemplateButton" type="button">Download Selected Template</button>
+            <button class="secondary-button" id="loadWorkerImportLookupsButton" type="button">Refresh Lists</button>
+            <button class="ghost-button reset-settings-button" type="button" data-target="#workerImportSettingsForm">Reset Settings</button>
+            <button class="secondary-button" id="planWorkersButton" type="button">Preview Spreadsheet</button>
+            <button class="danger-button" id="applyWorkersButton" type="button" disabled>Create Workers</button>
+          </div>
+        </div>
+
+        <form class="worker-field-picker" id="workerFieldForm">
+          <div class="section-heading compact-heading">
+            <h3>Spreadsheet Columns</h3>
+          </div>
+          <div class="field-picker-grid">
+            <label class="check-label"><input name="workerFields" type="checkbox" value="firstName" checked disabled><span>First Name</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="lastName" checked disabled><span>Last Name</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="dateOfBirth" checked disabled><span>Date of Birth</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="jobTitle" checked><span>Job Title</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="jobTitleId"><span>Job Title ID</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="email" checked><span>Email</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="mobile" checked><span>Mobile</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="phone"><span>Phone</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="internalIdentifier" checked><span>Internal ID</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="streetAddress"><span>Street Address</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="suburb"><span>Suburb</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="postcode"><span>Postcode</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="state"><span>State</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="country"><span>Country</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="emergencyContactName"><span>Emergency Contact Name</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="emergencyContactPhone"><span>Emergency Contact Phone</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="emergencyContactRelationship"><span>Emergency Contact Relationship</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="vehicleRegistration"><span>Vehicle Registration</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="vehicleMake"><span>Vehicle Make</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="vehicleModel"><span>Vehicle Model</span></label>
+            <label class="check-label"><input name="workerFields" type="checkbox" value="comments"><span>Comments</span></label>
+          </div>
+        </form>
+
+        <div class="import-grid worker-import-grid">
+          <label class="file-input">
+            <span>Spreadsheet</span>
+            <input id="workerImportFile" type="file" accept=".csv,.xlsx,.xlsm">
+          </label>
+          <label>
+            <span>Sheet</span>
+            <input id="workerImportSheetName" placeholder="Workers">
+          </label>
+          <label class="check-label">
+            <input id="workerImportContinueOnError" type="checkbox">
+            <span>Continue on error</span>
+          </label>
+        </div>
+
+        <form class="user-import-settings worker-import-settings" id="workerImportSettingsForm">
+          <div class="section-heading compact-heading">
+            <h3>Global Worker Settings</h3>
+          </div>
+          <div class="settings-grid">
+            <fieldset>
+              <legend>Profile</legend>
+              <label>
+                <span>Preferred Communication Language</span>
+                <input name="preferredCommunicationLanguage" id="workerPreferredCommunicationLanguage" value="en-US" placeholder="en-US">
+              </label>
+            </fieldset>
+            <fieldset class="wide-field">
+              <legend>Project Assignment</legend>
+              <div class="worker-assignment-grid">
+                <label>
+                  <span>Assigning Project</span>
+                  <select name="projectId" id="workerProjectSelect">
+                    <option value="">Select one project</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Default Employer</span>
+                  <select name="defaultEmployerId" id="workerDefaultEmployerSelect">
+                    <option value="">Select project first</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Send Test</span>
+                  <select name="sendTest" id="workerSendTest">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </label>
+                <label class="check-label">
+                  <input id="workerDifferentEmployers" type="checkbox">
+                  <span>Assign workers to different employers</span>
+                </label>
+              </div>
+            </fieldset>
+          </div>
+        </form>
+
+        <div class="status-line" id="workerImportStatus">Ready</div>
+        <div class="bulk-toolbar worker-employer-bulk" id="workerEmployerBulkControls" hidden>
+          <div class="selection-count" id="workerImportSelectionCount">0 selected</div>
+          <button class="ghost-button" id="selectAllWorkerImportRowsButton" type="button">Select All</button>
+          <button class="ghost-button" id="clearWorkerImportRowsButton" type="button">Clear Selection</button>
+          <label>
+            <span>Employer for Selected</span>
+            <select id="workerBulkEmployerSelect">
+              <option value="">Select employer</option>
+            </select>
+          </label>
+          <button class="secondary-button" id="applyWorkerBulkEmployerButton" type="button">Apply Employer</button>
+        </div>
+        <div class="table-wrap checklist-results-wrap" id="workerImportPlanWrap" hidden>
+          <table>
+            <thead>
+              <tr>
+                <th class="select-col">Use</th>
+                <th>Row</th>
+                <th>Worker</th>
+                <th>Job Title</th>
+                <th>Employer</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="workerImportPlanTable"></tbody>
+          </table>
+        </div>
+        <div class="table-wrap checklist-results-wrap" id="workerImportResultsWrap" hidden>
+          <table>
+            <thead>
+              <tr>
+                <th>Row</th>
+                <th>Worker</th>
+                <th>Employer</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="workerImportResults"></tbody>
           </table>
         </div>
       </section>
