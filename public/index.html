@@ -73,6 +73,27 @@
             </div>
           </div>
           <div class="nav-group">
+            <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="regionsMenu">
+              <span class="nav-group-label">
+                <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span>Regions</span>
+              </span>
+              <span class="nav-group-meta">
+                <span class="tab-note full">Full</span>
+                <svg class="nav-chevron" aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </span>
+            </button>
+            <div class="nav-submenu" id="regionsMenu">
+              <button class="tab" type="button" data-view="regionImportView">Spreadsheet Import</button>
+              <button class="tab" type="button" data-view="regionsView">Manage</button>
+            </div>
+          </div>
+          <div class="nav-group">
             <button class="nav-group-toggle" type="button" aria-expanded="false" aria-controls="jobTitlesMenu">
               <span class="nav-group-label">
                 <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
@@ -289,6 +310,138 @@
             <tbody id="userImportResults"></tbody>
           </table>
         </div>
+      </section>
+
+      <section class="view" id="regionImportView" aria-labelledby="regionImportTitle">
+        <div class="section-heading">
+          <h2 id="regionImportTitle">Regions Spreadsheet Import</h2>
+          <div class="actions">
+            <a class="secondary-button button-link" href="/api/templates/regions.csv" download>Download Template</a>
+            <button class="secondary-button" id="loadRegionImportLookupsButton" type="button">Refresh Regions</button>
+            <button class="ghost-button reset-settings-button" type="button" data-target="#regionImportSettingsForm">Reset Settings</button>
+            <button class="secondary-button" id="planRegionsButton" type="button">Preview Spreadsheet</button>
+            <button class="danger-button" id="applyRegionsButton" type="button" disabled>Create Regions</button>
+          </div>
+        </div>
+
+        <div class="import-grid">
+          <label class="file-input">
+            <span>Spreadsheet</span>
+            <input id="regionImportFile" type="file" accept=".csv,.xlsx,.xlsm">
+          </label>
+          <label>
+            <span>Sheet</span>
+            <input id="regionImportSheetName" placeholder="Regions">
+          </label>
+          <label class="check-label">
+            <input id="regionSkipExisting" type="checkbox" checked>
+            <span>Skip existing</span>
+          </label>
+          <label class="check-label">
+            <input id="regionImportContinueOnError" type="checkbox">
+            <span>Continue on error</span>
+          </label>
+        </div>
+
+        <form class="user-import-settings region-import-settings" id="regionImportSettingsForm">
+          <div class="section-heading compact-heading">
+            <h3>Global Region Settings</h3>
+          </div>
+          <div id="regionImportGlobalSettings"></div>
+        </form>
+
+        <div class="status-line" id="regionImportStatus">Ready</div>
+        <div class="user-import-list region-import-list" id="regionImportList"></div>
+        <div class="table-wrap checklist-results-wrap" id="regionImportResultsWrap" hidden>
+          <table>
+            <thead>
+              <tr>
+                <th>Row</th>
+                <th>Region</th>
+                <th>Parent Region</th>
+                <th>Show Filter</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="regionImportResults"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="regionsView" aria-labelledby="regionsTitle">
+        <div class="section-heading">
+          <h2 id="regionsTitle">Manage Regions</h2>
+          <div class="actions">
+            <label class="search-field">
+              <span>Search</span>
+              <input id="regionSearch" placeholder="Region, parent, or ID">
+            </label>
+          </div>
+        </div>
+        <div class="bulk-toolbar">
+          <div class="selection-count" id="regionSelectionCount">0 selected</div>
+          <button class="secondary-button" id="loadRegionsButton" type="button">Refresh</button>
+          <button class="ghost-button" id="selectVisibleRegionsButton" type="button">Select Visible</button>
+          <button class="ghost-button" id="clearRegionSelectionButton" type="button">Clear Selection</button>
+        </div>
+        <div class="bulk-layout">
+          <div class="table-wrap user-list-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="select-col">
+                    <input id="selectAllRegions" type="checkbox" aria-label="Select all visible regions">
+                  </th>
+                  <th>Region</th>
+                  <th>Parent Region</th>
+                  <th>Show Filter</th>
+                  <th>ID</th>
+                </tr>
+              </thead>
+              <tbody id="regionsTable"></tbody>
+            </table>
+          </div>
+          <form class="detail-panel" id="bulkRegionUpdateForm">
+            <h3>Bulk Update</h3>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="parentId">
+              <span>Set parent region</span>
+            </label>
+            <label>
+              <span>Parent Region</span>
+              <select name="parentId" id="regionBulkParentId" class="region-parent-select" data-blank-label="Select" data-include-clear="true">
+                <option value="">Select</option>
+                <option value="__clear">No Parent</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="isIncludedInFilterListOnPublicSite">
+              <span>Set show region as filter</span>
+            </label>
+            <label>
+              <span>Show Region as Filter</span>
+              <select name="isIncludedInFilterListOnPublicSite">
+                <option value="">Select</option>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label class="check-label">
+              <input name="continueOnError" type="checkbox">
+              <span>Continue on error</span>
+            </label>
+            <div class="actions detail-actions stacked-actions">
+              <button class="secondary-button" id="loadRegionsInlineButton" type="button">Refresh</button>
+              <button class="ghost-button reset-settings-button" type="button" data-target="#bulkRegionUpdateForm">Reset Settings</button>
+              <button class="secondary-button" id="previewRegionUpdateButton" type="button">Preview Update</button>
+              <button class="secondary-button" id="bulkRegionUpdateButton" type="submit" disabled>Update Selected</button>
+              <button class="secondary-button" id="previewRegionDeleteButton" type="button">Preview Delete</button>
+              <button class="danger-button" id="bulkRegionDeleteButton" type="button" disabled>Delete Selected</button>
+            </div>
+          </form>
+        </div>
+        <div class="status-line" id="regionsStatus">Ready</div>
       </section>
 
       <section class="view" id="jobTitleImportView" aria-labelledby="jobTitleImportTitle">

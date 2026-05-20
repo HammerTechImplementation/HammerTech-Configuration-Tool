@@ -54,6 +54,13 @@ import {
   listObservationTypes,
   planSimpleObservationTypeCreateOperations
 } from "./observations.js";
+import {
+  deleteRegion,
+  executeBulkRegionUpdate,
+  executeRegionCreateOperations,
+  listAllRegions,
+  planRegionCreateOperations
+} from "./regions.js";
 import { readSpreadsheetRowsFromBuffer } from "./spreadsheet.js";
 import { clientFromSession, deleteSession, loadSession, saveSession } from "./session.js";
 import { authenticateUiSession } from "./ui-auth.js";
@@ -148,6 +155,12 @@ async function routeApi(request, response, url, context) {
     const client = await authenticatedClient(context.sessionPath);
     const projects = await listAllProjects(client, queryObject(url));
     return sendJson(response, 200, { projects });
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/regions") {
+    const client = await authenticatedClient(context.sessionPath);
+    const regions = await listAllRegions(client, queryObject(url));
+    return sendJson(response, 200, { regions });
   }
 
   if (request.method === "GET" && url.pathname === "/api/user-import/lookups") {
@@ -356,6 +369,26 @@ async function routeApi(request, response, url, context) {
     const body = await readJsonBody(request);
     const ids = normalizeLicenseTypeIds(body.ids);
     const results = await executeBulk(ids, body.continueOnError, async (id) => deleteLicenseType(client, required(session.tenant, "tenant"), id));
+    return sendJson(response, 200, { results });
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/regions/bulk/update") {
+    const session = await uiAuthenticatedSession(context.sessionPath);
+    const client = clientFromSession(session);
+    const body = await readJsonBody(request);
+    const ids = normalizeRegionIds(body.ids);
+    const results = await executeBulkRegionUpdate(client, required(session.tenant, "tenant"), ids, body.payload || {}, {
+      continueOnError: body.continueOnError
+    });
+    return sendJson(response, 200, { results });
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/regions/bulk/delete") {
+    const session = await uiAuthenticatedSession(context.sessionPath);
+    const client = clientFromSession(session);
+    const body = await readJsonBody(request);
+    const ids = normalizeRegionIds(body.ids);
+    const results = await executeBulk(ids, body.continueOnError, async (id) => deleteRegion(client, required(session.tenant, "tenant"), id));
     return sendJson(response, 200, { results });
   }
 
@@ -576,6 +609,50 @@ async function routeApi(request, response, url, context) {
       continueOnError: url.searchParams.get("continueOnError") === "true",
       skipExisting: url.searchParams.get("skipExisting") !== "false"
     });
+    return sendJson(response, 200, {
+      rowCount: rows.length,
+      hasErrors: results.some((result) => result.status === "invalid" || result.status === "failed"),
+      operations: results.map((result) => result.operation),
+      results
+    });
+  }
+
+  if (request.method === "POST" && (
+    url.pathname === "/api/regions/import/plan" ||
+    url.pathname === "/api/regions/import/apply"
+  )) {
+    const apply = url.pathname.endsWith("/apply");
+    const contentType = String(request.headers["content-type"] || "").toLowerCase();
+
+    if (apply && contentType.includes("application/json")) {
+      const body = await readJsonBody(request);
+      const session = await uiAuthenticatedSession(context.sessionPath);
+      const client = clientFromSession(session);
+      const results = await executeRegionCreateOperations(client, required(session.tenant, "tenant"), body.operations || [], {
+        apply: true,
+        globalSettings: body.globalSettings || {},
+        regionSettings: body.regionSettings || {},
+        continueOnError: body.continueOnError !== false,
+        skipExisting: body.skipExisting !== false
+      });
+      return sendJson(response, 200, {
+        rowCount: body.operations?.length || 0,
+        hasErrors: results.some((result) => result.status === "invalid" || result.status === "failed"),
+        results
+      });
+    }
+
+    const fileName = request.headers["x-file-name"] || "regions.csv";
+    const buffer = await readBody(request);
+    const rows = await readSpreadsheetRowsFromBuffer(String(fileName), buffer, {
+      sheet: url.searchParams.get("sheet") || undefined
+    });
+    const plan = planRegionCreateOperations(rows);
+    const results = plan.operations.map((operation) => ({
+      operation,
+      status: operation.errors?.length ? "invalid" : "planned",
+      ...(operation.errors?.length ? { errors: operation.errors } : {})
+    }));
     return sendJson(response, 200, {
       rowCount: rows.length,
       hasErrors: results.some((result) => result.status === "invalid" || result.status === "failed"),
@@ -963,6 +1040,13 @@ function normalizeLicenseTypeIds(ids) {
   return Array.from(new Set(normalized));
 }
 
+function normalizeRegionIds(ids) {
+  if (!Array.isArray(ids) || !ids.length) throw httpError(400, "Select at least one region.");
+  const normalized = ids.map((id) => String(id || "").trim()).filter(Boolean);
+  if (!normalized.length) throw httpError(400, "Select at least one region.");
+  return Array.from(new Set(normalized));
+}
+
 function summarizeChecklistBulkResults(results) {
   const failed = results.filter((result) => result.status === "failed");
   const completed = results.filter((result) => result.status !== "failed");
@@ -1018,6 +1102,7 @@ function templateFileFor(entity) {
   if (entity === "observations") return "observations-template.csv";
   if (entity === "job-titles") return "job-titles-template.csv";
   if (entity === "license-types") return "license-types-template.csv";
+  if (entity === "regions") return "regions-template.csv";
   return getEntityConfig(entity).templateFile;
 }
 

@@ -245,6 +245,10 @@ export class HammerTechClient {
     return this.request("GET", "/api/v1/Projects", { query });
   }
 
+  listRegions(query = {}) {
+    return this.request("GET", "/api/v1/Regions", { query });
+  }
+
   getProject(id) {
     return this.request("GET", `/api/v1/Projects/${encodeURIComponent(id)}`);
   }

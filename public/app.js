@@ -1,6 +1,7 @@
 const state = {
   session: null,
   users: [],
+  regions: [],
   jobTitles: [],
   licenseTypes: [],
   licenseCategories: [],
@@ -15,6 +16,7 @@ const state = {
   observationCategories: [],
   observationBulkDetails: new Map(),
   checklistBulkDetails: new Map(),
+  regionImportOperations: [],
   checklistImportOperations: [],
   observationImportOperations: [],
   userImportOperations: [],
@@ -23,6 +25,7 @@ const state = {
   userImportLookupsLoaded: false,
   observationLookupsLoaded: false,
   selectedIds: new Set(),
+  selectedRegionIds: new Set(),
   selectedJobTitleIds: new Set(),
   selectedLicenseTypeIds: new Set(),
   selectedProjectIds: new Set(),
@@ -38,6 +41,9 @@ const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 const PREVIEW_ACTION_BUTTONS = {
   genericImport: "#applyButton",
   userImport: "#applyUsersButton",
+  regionImport: "#applyRegionsButton",
+  regionBulkUpdate: "#bulkRegionUpdateButton",
+  regionBulkDelete: "#bulkRegionDeleteButton",
   jobTitleImport: "#applyJobTitlesButton",
   jobTitleBulkDelete: "#bulkJobTitleDeleteButton",
   licenseTypeImport: "#applyLicenseTypesButton",
@@ -150,6 +156,7 @@ async function init() {
   bindUiPolish();
   bindAuth();
   bindUserImport();
+  bindRegions();
   bindJobTitles();
   bindLicenseTypes();
   bindImport();
@@ -177,6 +184,7 @@ function bindTabs() {
     button.addEventListener("click", () => {
       activateTab(button);
       if (button.dataset.importEntity) setImportEntity(button.dataset.importEntity);
+      if (button.dataset.view === "regionImportView") loadRegions({ quiet: true, statusSelector: "#regionImportStatus" });
       if (button.dataset.view === "checklistImportView") loadInspectionObservationTypes();
       if (button.dataset.view === "observationImportView") loadObservationLookups({ quiet: true });
     });
@@ -272,6 +280,7 @@ function bindUiPolish() {
 function normalizeManageLayouts() {
   const loadedListLabels = {
     usersTable: "Loaded Users",
+    regionsTable: "Loaded Regions",
     projectsTable: "Loaded Projects",
     employersTable: "Loaded Employer Profiles",
     equipmentTable: "Loaded Equipment Profiles",
@@ -335,6 +344,7 @@ function resetSettingsForTarget(selector) {
     renderObservationSettingsForms();
     renderObservationImportCategoryOptions();
   }
+  if (target.matches("#regionImportSettingsForm, #bulkRegionUpdateForm")) renderRegionParentOptions();
   if (target.matches("#checklistImportSettingsForm")) renderChecklistImportObservationOptions();
   if (target.matches("#checklistBulkForm")) renderDefaultObservationOptions();
   updateObservationColorPreviews();
@@ -371,6 +381,7 @@ function resetSettingsElement(target) {
 function refreshCollapsibleFieldsets(root = document) {
   const fieldsets = root.querySelectorAll([
     ".user-import-settings fieldset",
+    ".region-import-settings fieldset",
     ".checklist-import-settings fieldset",
     ".checklist-updater fieldset",
     ".observation-import-settings fieldset",
@@ -378,6 +389,7 @@ function refreshCollapsibleFieldsets(root = document) {
     ".equipment-assignment-settings fieldset",
     ".equipment-inductions-panel fieldset",
     ".user-import-detail fieldset",
+    ".region-import-detail fieldset",
     ".checklist-import-detail fieldset",
     ".observation-import-detail fieldset",
     ".equipment-assignment-detail fieldset"
@@ -395,7 +407,7 @@ function refreshCollapsibleFieldsets(root = document) {
     const siblingFieldsets = Array.from(fieldset.parentElement?.children || [])
       .filter((item) => item.tagName === "FIELDSET");
     const index = siblingFieldsets.indexOf(fieldset);
-    const shouldCollapse = index > 0 || Boolean(fieldset.closest(".user-import-detail, .checklist-import-detail, .observation-import-detail, .equipment-assignment-detail"));
+    const shouldCollapse = index > 0 || Boolean(fieldset.closest(".user-import-detail, .region-import-detail, .checklist-import-detail, .observation-import-detail, .equipment-assignment-detail"));
     setFieldsetCollapsed(fieldset, shouldCollapse);
   });
 }
@@ -458,6 +470,9 @@ function invalidatePreviewForControl(target) {
   if (target.matches("#userImportFile, #userImportSheetName, #userImportContinueOnError")) {
     invalidatePreview("userImport", "#userImportStatus");
   }
+  if (target.matches("#regionImportFile, #regionImportSheetName, #regionSkipExisting, #regionImportContinueOnError")) {
+    invalidatePreview("regionImport", "#regionImportStatus");
+  }
   if (target.matches("#jobTitleImportFile, #jobTitleImportSheetName, #jobTitleSkipExisting, #jobTitleContinueOnError")) {
     invalidatePreview("jobTitleImport", "#jobTitleImportStatus");
   }
@@ -475,6 +490,11 @@ function invalidatePreviewForControl(target) {
   }
 
   if (target.closest("#jobTitlesView")) invalidatePreview("jobTitleBulkDelete", "#jobTitlesStatus");
+
+  if (target.closest("#bulkRegionUpdateForm, #regionsTable")) {
+    invalidatePreview("regionBulkUpdate", "#regionsStatus");
+    invalidatePreview("regionBulkDelete", "#regionsStatus");
+  }
 
   if (target.closest("#bulkUpdateForm, #usersTable")) {
     invalidatePreview("userBulkUpdate", "#usersStatus");
@@ -508,6 +528,7 @@ function invalidatePreviewForControl(target) {
 function invalidatePreviewForSettingsTarget(selector) {
   if ([
     "#userImportSettingsForm",
+    "#regionImportSettingsForm",
     "#checklistImportSettingsForm",
     "#observationImportSettingsForm"
   ].includes(selector)) {
@@ -614,6 +635,30 @@ function bindUserImport() {
   $("#loadUserImportLookupsButton").addEventListener("click", loadUserImportLookups);
   $("#planUsersButton").addEventListener("click", () => runUserImport(false));
   $("#applyUsersButton").addEventListener("click", () => runUserImport(true));
+}
+
+function bindRegions() {
+  renderRegionImportGlobalSettings();
+  $("#planRegionsButton").addEventListener("click", () => runRegionImport(false));
+  $("#applyRegionsButton").addEventListener("click", () => runRegionImport(true));
+  $("#loadRegionImportLookupsButton").addEventListener("click", () => loadRegions({ statusSelector: "#regionImportStatus" }));
+  $("#loadRegionsButton").addEventListener("click", () => loadRegions());
+  $("#loadRegionsInlineButton").addEventListener("click", () => loadRegions());
+  $("#regionSearch").addEventListener("input", renderRegions);
+  $("#selectAllRegions").addEventListener("change", (event) => setVisibleRegionSelection(event.target.checked));
+  $("#selectVisibleRegionsButton").addEventListener("click", () => setVisibleRegionSelection(true));
+  $("#clearRegionSelectionButton").addEventListener("click", () => {
+    state.selectedRegionIds.clear();
+    renderRegions();
+  });
+  $("#bulkRegionUpdateForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await bulkUpdateRegions(event.currentTarget);
+  });
+  $("#previewRegionUpdateButton").addEventListener("click", () => previewRegionUpdate($("#bulkRegionUpdateForm")));
+  $("#previewRegionDeleteButton").addEventListener("click", previewRegionDelete);
+  $("#bulkRegionDeleteButton").addEventListener("click", bulkDeleteRegions);
+  renderRegionParentOptions();
 }
 
 function bindJobTitles() {
@@ -1090,6 +1135,423 @@ function regionOptionsHtml(blankLabel = "") {
     `<option value="${escapeHtml(region.id)}">${escapeHtml(region.name)}</option>`
   )));
   return options.join("");
+}
+
+async function runRegionImport(apply) {
+  if (apply) {
+    if (!requirePreviewReady("regionImport", "Preview a regions spreadsheet first")) return;
+    await applyRegionImport();
+    return;
+  }
+
+  const file = $("#regionImportFile").files[0];
+  if (!file) return toast("Choose a regions spreadsheet");
+
+  const status = $("#regionImportStatus");
+  status.classList.remove("error");
+  status.textContent = "Reading spreadsheet...";
+  setPreviewReady("regionImport", false);
+
+  await runWithToast(async () => {
+    if (!state.regions.length) await loadRegions({ quiet: true, statusSelector: "#regionImportStatus" });
+    const params = new URLSearchParams({
+      continueOnError: String($("#regionImportContinueOnError").checked)
+    });
+    if ($("#regionImportSheetName").value.trim()) params.set("sheet", $("#regionImportSheetName").value.trim());
+    const result = await api(`/api/regions/import/plan?${params}`, {
+      method: "POST",
+      rawBody: await file.arrayBuffer(),
+      headers: {
+        "content-type": "application/octet-stream",
+        "x-file-name": file.name
+      }
+    });
+    state.regionImportOperations = result.operations || (result.results || []).map((item) => item.operation).filter(Boolean);
+    renderRegionImportPlan(result);
+    setPreviewReady("regionImport", state.regionImportOperations.length > 0);
+    return "Region spreadsheet preview ready";
+  }, (message) => showEntityError("#regionImportStatus", message));
+}
+
+async function applyRegionImport() {
+  if (!requirePreviewReady("regionImport", "Preview a regions spreadsheet first")) return;
+  if (!state.regionImportOperations.length) {
+    toast("Preview a regions spreadsheet first");
+    setPreviewReady("regionImport", false);
+    return;
+  }
+
+  const status = $("#regionImportStatus");
+  status.classList.remove("error");
+  status.textContent = "Creating regions...";
+
+  await runWithToast(async () => {
+    const result = await api("/api/regions/import/apply", {
+      method: "POST",
+      body: {
+        operations: state.regionImportOperations,
+        globalSettings: collectSettingsFromElement($("#regionImportSettingsForm")),
+        regionSettings: collectRegionImportOverrides(),
+        continueOnError: $("#regionImportContinueOnError").checked,
+        skipExisting: $("#regionSkipExisting").checked
+      }
+    });
+    renderRegionImportResults(result);
+    state.regionImportOperations = [];
+    setPreviewReady("regionImport", false);
+    await loadRegions({ quiet: true, statusSelector: "#regionImportStatus" });
+    return "Region import complete";
+  }, (message) => showEntityError("#regionImportStatus", message));
+}
+
+function renderRegionImportPlan(result) {
+  const list = $("#regionImportList");
+  list.innerHTML = "";
+  $("#regionImportResults").innerHTML = "";
+  $("#regionImportResultsWrap").hidden = true;
+
+  for (const operation of state.regionImportOperations) {
+    const card = document.createElement("details");
+    card.className = "user-import-card region-import-card";
+    card.dataset.clientId = operation.clientId || "";
+    const errors = operation.errors || [];
+    card.innerHTML = `
+      <summary>
+        <span class="user-import-summary region-import-summary">
+          <span class="user-import-name region-import-name">${escapeHtml(operation.name || "Unnamed region")}</span>
+          <span class="user-import-meta region-import-meta">row ${escapeHtml(operation.rowNumber || "")}</span>
+          ${errors.length ? `<span class="status-badge status-invalid">invalid</span>` : ""}
+        </span>
+        <label class="quick-observation-select">
+          <span>Parent Region</span>
+          <select class="region-import-parent-select region-parent-select" data-client-id="${escapeHtml(operation.clientId || "")}" data-blank-label="Use global" data-include-clear="true">
+            ${regionParentOptionsHtml("", { blankLabel: "Use global", includeClear: true })}
+          </select>
+        </label>
+      </summary>
+      <div class="user-import-detail region-import-detail">
+        ${errors.length ? `<div class="inline-error">${escapeHtml(errors.join("; "))}</div>` : ""}
+        <form class="region-import-override-form">
+          ${regionSettingsHtml({ scope: "override", includeParent: false })}
+        </form>
+      </div>
+    `;
+    list.appendChild(card);
+  }
+
+  $$(".region-import-parent-select").forEach((select) => {
+    select.addEventListener("click", (event) => event.stopPropagation());
+  });
+
+  const failed = (result.results || []).filter((item) => item.status === "invalid" || item.status === "failed").length;
+  $("#regionImportStatus").classList.toggle("error", failed > 0);
+  $("#regionImportStatus").textContent = `${state.regionImportOperations.length} regions found, ${failed} invalid`;
+}
+
+function collectRegionImportOverrides() {
+  const overrides = {};
+  $$(".region-import-card").forEach((card) => {
+    const clientId = card.dataset.clientId;
+    const settings = collectSettingsFromElement(card.querySelector(".region-import-override-form"));
+    const parentId = card.querySelector(".region-import-parent-select")?.value || "";
+    if (parentId) settings.parentId = parentId;
+    if (clientId && Object.keys(settings).length) overrides[clientId] = settings;
+  });
+  return overrides;
+}
+
+function renderRegionImportResults(result) {
+  const tbody = $("#regionImportResults");
+  tbody.innerHTML = "";
+  $("#regionImportResultsWrap").hidden = false;
+  for (const item of result.results || []) {
+    const op = item.operation || {};
+    const payload = op.payload || {};
+    const parentName = regionNameById(payload.parentId) || payload.parentId || "";
+    const message = item.error || item.errors?.join("; ") || item.message || op.warnings?.join("; ") || "";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(op.rowNumber || "")}</td>
+      <td>${escapeHtml(payload.name || op.name || "")}</td>
+      <td>${escapeHtml(parentName)}</td>
+      <td>${escapeHtml(booleanLabel(payload.isIncludedInFilterListOnPublicSite))}</td>
+      <td><span class="status-badge status-${escapeHtml(item.status || "planned")}">${escapeHtml(item.status || "")}</span></td>
+      <td>${escapeHtml(message)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+  const failed = (result.results || []).filter((item) => ["invalid", "failed"].includes(item.status)).length;
+  $("#regionImportStatus").classList.toggle("error", failed > 0);
+  $("#regionImportStatus").textContent = `${result.results?.length || 0} regions processed, ${failed} failed`;
+}
+
+async function loadRegions({ quiet = false, statusSelector = "#regionsStatus" } = {}) {
+  const status = $(statusSelector);
+  if (status && !quiet) {
+    status.classList.remove("error");
+    status.textContent = "Loading regions...";
+  }
+
+  const load = async () => {
+    const result = await api("/api/regions");
+    state.regions = result.regions || [];
+    state.selectedRegionIds.clear();
+    renderRegions();
+    renderRegionParentOptions();
+    if (state.regionImportOperations.length) renderRegionImportPlan({ results: [] });
+    if (status) status.textContent = `${state.regions.length} regions loaded`;
+    return "Regions refreshed";
+  };
+
+  if (quiet) {
+    try {
+      await load();
+    } catch (error) {
+      if (status) showEntityError(statusSelector, error.message || "Failed to load regions");
+    }
+    return;
+  }
+
+  await runWithToast(load, (message) => showEntityError(statusSelector, message));
+}
+
+function renderRegionImportGlobalSettings() {
+  const container = $("#regionImportGlobalSettings");
+  if (!container) return;
+  container.innerHTML = regionSettingsHtml({ scope: "global" });
+}
+
+function regionSettingsHtml({ scope = "global", includeParent = true } = {}) {
+  const blankLabel = scope === "global" ? "No change" : "Use global";
+  return `
+    <div class="settings-grid">
+      <fieldset>
+        <legend>Region Settings</legend>
+        ${includeParent ? `
+          <label>
+            <span>Parent Region</span>
+            <select name="parentId" class="region-parent-select" data-blank-label="${escapeHtml(blankLabel)}" data-include-clear="true">
+              ${regionParentOptionsHtml("", { blankLabel, includeClear: true })}
+            </select>
+          </label>
+        ` : ""}
+        <label>
+          <span>Show Region as Filter</span>
+          <select name="isIncludedInFilterListOnPublicSite">
+            <option value="">${escapeHtml(blankLabel)}</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </label>
+      </fieldset>
+    </div>
+  `;
+}
+
+function renderRegionParentOptions() {
+  $$(".region-parent-select").forEach((select) => {
+    const previous = select.value;
+    const blankLabel = select.dataset.blankLabel || "No change";
+    const includeClear = select.dataset.includeClear !== "false";
+    select.innerHTML = regionParentOptionsHtml(previous, { blankLabel, includeClear });
+    if (Array.from(select.options).some((option) => option.value === previous)) select.value = previous;
+  });
+}
+
+function regionParentOptionsHtml(selected = "", { blankLabel = "No change", includeClear = true } = {}) {
+  const seen = new Set([""]);
+  const options = [`<option value=""${selected === "" ? " selected" : ""}>${escapeHtml(blankLabel)}</option>`];
+  if (includeClear) {
+    options.push(`<option value="__clear"${selected === "__clear" ? " selected" : ""}>No Parent</option>`);
+    seen.add("__clear");
+  }
+  for (const region of state.regions) {
+    if (!region.id || seen.has(region.id)) continue;
+    seen.add(region.id);
+    options.push(`<option value="${escapeHtml(region.id)}"${selected === region.id ? " selected" : ""}>${escapeHtml(region.name || region.id)}</option>`);
+  }
+  if (selected && !seen.has(selected)) {
+    options.push(`<option value="${escapeHtml(selected)}" selected>${escapeHtml(`Existing ${selected}`)}</option>`);
+  }
+  return options.join("");
+}
+
+function renderRegions() {
+  const tbody = $("#regionsTable");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  for (const region of visibleRegions()) {
+    const id = region.id || "";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="select-col">
+        <input class="region-select" type="checkbox" aria-label="Select ${escapeHtml(region.name || "region")}" data-id="${escapeHtml(id)}" ${state.selectedRegionIds.has(id) ? "checked" : ""}>
+      </td>
+      <td>${escapeHtml(region.name || "")}</td>
+      <td>${escapeHtml(region.parentName || regionNameById(region.parentId) || region.parentId || "")}</td>
+      <td>${escapeHtml(booleanLabel(region.isIncludedInFilterListOnPublicSite))}</td>
+      <td>${escapeHtml(id)}</td>
+    `;
+    tr.addEventListener("click", (event) => {
+      if (event.target.matches("input")) return;
+      toggleRegionSelected(id);
+    });
+    tbody.appendChild(tr);
+  }
+
+  $$(".region-select").forEach((checkbox) => {
+    checkbox.addEventListener("change", (event) => {
+      setRegionSelected(event.target.dataset.id, event.target.checked);
+    });
+  });
+  renderRegionSelectionState();
+}
+
+function visibleRegions() {
+  const search = $("#regionSearch").value.trim().toLowerCase();
+  if (!search) return state.regions;
+  return state.regions.filter((region) => [
+    region.name,
+    region.id,
+    region.parentName,
+    regionNameById(region.parentId),
+    booleanLabel(region.isIncludedInFilterListOnPublicSite)
+  ].some((value) => String(value || "").toLowerCase().includes(search)));
+}
+
+function toggleRegionSelected(id) {
+  setRegionSelected(id, !state.selectedRegionIds.has(id));
+  renderRegions();
+}
+
+function setRegionSelected(id, selected) {
+  if (!id) return;
+  if (selected) state.selectedRegionIds.add(id);
+  else state.selectedRegionIds.delete(id);
+  renderRegionSelectionState();
+}
+
+function setVisibleRegionSelection(selected) {
+  for (const region of visibleRegions()) {
+    if (selected) state.selectedRegionIds.add(region.id);
+    else state.selectedRegionIds.delete(region.id);
+  }
+  renderRegions();
+}
+
+function renderRegionSelectionState() {
+  const visible = visibleRegions();
+  const selectedVisible = visible.filter((region) => state.selectedRegionIds.has(region.id)).length;
+  const allCheckbox = $("#selectAllRegions");
+  allCheckbox.checked = Boolean(visible.length && selectedVisible === visible.length);
+  allCheckbox.indeterminate = selectedVisible > 0 && selectedVisible < visible.length;
+  $("#regionSelectionCount").textContent = `${state.selectedRegionIds.size} selected`;
+  setPreviewReady("regionBulkUpdate", false);
+  setPreviewReady("regionBulkDelete", false);
+}
+
+function collectRegionBulkPayload(form) {
+  const enabled = checkedValues(form.elements.enabledFields);
+  const payload = {};
+  for (const field of enabled) {
+    const input = form.elements[field];
+    if (!input) continue;
+    const value = String(input.value || "").trim();
+    if (field === "parentId") {
+      if (!value) {
+        toast("Choose a parent region or No Parent");
+        return null;
+      }
+      payload.parentId = value;
+      continue;
+    }
+    if (!value) {
+      toast(`Choose a value for ${field}`);
+      return null;
+    }
+    payload[field] = value;
+  }
+  return payload;
+}
+
+function previewRegionUpdate(form) {
+  previewBulkUpdate({
+    key: "regionBulkUpdate",
+    ids: Array.from(state.selectedRegionIds),
+    form,
+    statusSelector: "#regionsStatus",
+    label: "region",
+    payloadBuilder: collectRegionBulkPayload
+  });
+}
+
+async function bulkUpdateRegions(form) {
+  if (!requirePreviewReady("regionBulkUpdate", "Preview the region update first")) return;
+  const ids = Array.from(state.selectedRegionIds);
+  if (!ids.length) return toast("Select at least one region");
+  const payload = collectRegionBulkPayload(form);
+  if (!payload) return;
+  if (!Object.keys(payload).length) return toast("Choose at least one update field");
+
+  await runWithToast(async () => {
+    const result = await api("/api/regions/bulk/update", {
+      method: "POST",
+      body: {
+        ids,
+        payload,
+        continueOnError: form.elements.continueOnError.checked
+      }
+    });
+    reportEntityBulkResult("#regionsStatus", result, "updated");
+    setPreviewReady("regionBulkUpdate", false);
+    await loadRegions({ quiet: true });
+    return "Region update complete";
+  }, (message) => showEntityError("#regionsStatus", message));
+}
+
+function previewRegionDelete() {
+  previewBulkDelete({
+    key: "regionBulkDelete",
+    ids: Array.from(state.selectedRegionIds),
+    statusSelector: "#regionsStatus",
+    label: "region"
+  });
+}
+
+async function bulkDeleteRegions() {
+  if (!requirePreviewReady("regionBulkDelete", "Preview the region delete first")) return;
+  const ids = Array.from(state.selectedRegionIds);
+  if (!ids.length) return toast("Select at least one region");
+  if (!window.confirm(`Delete ${ids.length} selected region${ids.length === 1 ? "" : "s"}?`)) return;
+
+  const form = $("#bulkRegionUpdateForm");
+  await runWithToast(async () => {
+    const result = await api("/api/regions/bulk/delete", {
+      method: "POST",
+      body: {
+        ids,
+        continueOnError: form.elements.continueOnError.checked
+      }
+    });
+    reportEntityBulkResult("#regionsStatus", result, "deleted");
+    state.selectedRegionIds.clear();
+    setPreviewReady("regionBulkDelete", false);
+    await loadRegions({ quiet: true });
+    return "Region delete complete";
+  }, (message) => showEntityError("#regionsStatus", message));
+}
+
+function regionNameById(id) {
+  const value = String(id || "");
+  if (!value) return "";
+  return state.regions.find((region) => region.id === value)?.name || "";
+}
+
+function booleanLabel(value) {
+  if (value === true) return "Yes";
+  if (value === false) return "No";
+  return "";
 }
 
 async function runJobTitleImport(apply) {
